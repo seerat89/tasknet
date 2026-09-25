@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 420" role="img" aria-labelledby="title">
+  <title>TaskNet logo</title>
+
+  <g transform="translate(25,15) scale(.75)">
+    <path
+      d="M88 102c0-55 45-100 100-100h238c0 82-66 148-148 148H88z"
+      fill="#FFFFFF"
+    />
+    <path
+      d="M205 150c81 0 146 66 146 147v191l-92-57c-34-21-54-57-54-97V150z"
+      fill="#FFFFFF"
+    />
+  </g>
+
+  <text
+    x="390"
+    y="285"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="235"
+    font-weight="800"
+  >
+    <tspan fill="#FFFFFF">Task</tspan><tspan fill="#FFFFFF">Net</tspan>
+  </text>
+</svg>
