@@ -1,7 +1,5 @@
 <?php
 
-use Laravel\Fortify\Features;
-
 return [
 
     /*
@@ -19,48 +17,27 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Fortify Password Broker
+    | Username
     |--------------------------------------------------------------------------
     |
-    | Here you may specify which password broker Fortify can use when a user
-    | is resetting their password. This configured value should match one
-    | of your password brokers setup in your "auth" configuration file.
+    | TaskNet users sign in with their generated Demo ID instead of an email
+    | address. Demo IDs are stored in uppercase and normalized during login.
     |
     */
 
-    'passwords' => 'users',
-
-    /*
-    |--------------------------------------------------------------------------
-    | Username / Email
-    |--------------------------------------------------------------------------
-    |
-    | This value defines which model attribute should be considered as your
-    | application's "username" field. Typically, this might be the email
-    | address of the users but you are free to change this value here.
-    |
-    | Out of the box, Fortify expects forgot password and reset password
-    | requests to have a field named 'email'. If the application uses
-    | another name for the field you may define it below as needed.
-    |
-    */
-
-    'username' => 'email',
-
-    'email' => 'email',
+    'username' => 'demo_id',
 
     /*
     |--------------------------------------------------------------------------
     | Lowercase Usernames
     |--------------------------------------------------------------------------
     |
-    | This value defines whether usernames should be lowercased before saving
-    | them in the database, as some database system string fields are case
-    | sensitive. You may disable this for your application if necessary.
+    | Disabled because Demo IDs are uppercase; the demo login callback in
+    | FortifyServiceProvider normalizes the submitted value itself.
     |
     */
 
-    'lowercase_usernames' => true,
+    'lowercase_usernames' => false,
 
     /*
     |--------------------------------------------------------------------------
@@ -74,10 +51,6 @@ return [
     */
 
     'home' => '/',
-
-    'redirects' => [
-        'register' => '/email/verify',
-    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -113,15 +86,13 @@ return [
     |--------------------------------------------------------------------------
     |
     | By default, Fortify will throttle logins to five requests per minute for
-    | every email and IP address combination. However, if you would like to
-    | specify a custom rate limiter to call then you may specify it here.
+    | every Demo ID and IP address combination. The custom "login" limiter is
+    | defined in FortifyServiceProvider.
     |
     */
 
     'limiters' => [
         'login' => 'login',
-        'two-factor' => 'two-factor',
-        'passkeys' => 'passkeys',
     ],
 
     /*
@@ -139,36 +110,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Passkeys
-    |--------------------------------------------------------------------------
-    |
-    | These settings configure Fortify's passkey (WebAuthn) support. Passkeys
-    | allow users to sign in without needing to remember credentials since
-    | they use public-key cryptography - making them immune to breaches.
-    |
-    */
-
-    'passkeys' => [
-        'relying_party_id' => parse_url(config('app.url'), PHP_URL_HOST),
-        'allowed_origins' => [config('app.url')],
-        'timeout' => 60000,
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Features
     |--------------------------------------------------------------------------
     |
-    | Some of the Fortify features are optional. You may disable the features
-    | by removing them from this array. You're free to only remove some of
-    | these features or you can even remove all of these if you need to.
+    | TaskNet enables none of the optional Fortify features: demo workspaces
+    | have no registration, email verification, password reset, two-factor
+    | authentication or passkeys.
     |
     */
 
-    'features' => [
-        Features::registration(),
-        Features::resetPasswords(),
-        Features::emailVerification(),
-    ],
+    'features' => [],
 
 ];

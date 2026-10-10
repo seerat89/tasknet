@@ -12,6 +12,14 @@ TaskNet is a small Laravel project/task app that demonstrates how users can conn
 
 It is planned as a temporary public MCP testing environment at https://tasknet.seerat.me (not deployed yet). It is not for real or sensitive project data.
 
+## Demo Workspaces
+
+- Each visitor gets an isolated, temporary demo workspace. There is no registration, email address or password recovery.
+- Credentials are a generated Demo ID (e.g. `TN-7K4P2Q`) and password, shown once. TaskNet stores only a password hash.
+- A workspace expires 30 days after creation and is then deleted (`php artisan tasknet:cleanup-demos`, scheduled daily).
+- Planned workspace limits: 10 projects and 100 tasks (see `config/tasknet.php`).
+- TaskNet is for MCP testing, not real or sensitive work.
+
 ## Stack
 
 - Laravel 13, PHP 8.5, Blade, Tailwind CSS 4

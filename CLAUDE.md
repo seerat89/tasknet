@@ -10,14 +10,13 @@ TaskNet is intended to be deployed publicly as a temporary MCP testing environme
 
 Demo workspaces are temporary and are not intended for real or sensitive project data.
 
-Planned demo-account design (not implemented yet; current auth is still Fortify registration with email verification and password reset):
+Demo-account authentication (implemented; Fortify handles login/logout only):
 
-- isolated workspace per demo user
-- generated Demo ID and password, shown once
+- isolated workspace per demo user (the `User` model, `is_demo = true`)
+- generated Demo ID and password, shown once (`App\Actions\CreateDemoWorkspace`)
 - no real email, no email verification, no password recovery
-- 30-day expiry
-- maximum 10 projects
-- maximum 100 tasks per workspace
+- 30-day expiry, enforced at login and by middleware; expired workspaces are deleted by `tasknet:cleanup-demos` (scheduled daily)
+- limits of 10 projects and 100 tasks per workspace are defined in `config/tasknet.php` but not enforced yet (Projects and Tasks do not exist)
 - web UI and future MCP access must use the same authorization and limits
 
 Infrastructure:

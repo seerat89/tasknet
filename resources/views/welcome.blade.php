@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="TaskNet helps you organize your work with projects and tasks — simple, clean and focused.">
+        <meta name="description" content="TaskNet is a temporary project and task sandbox for testing how AI agents interact with an application through MCP.">
         <meta name="color-scheme" content="light">
-        <title>TaskNet · Simple projects. Clear tasks.</title>
+        <title>TaskNet · Connect your AI agent. Test MCP.</title>
         <link rel="icon" href="{{ asset('brand/tasknet-mark.svg') }}" type="image/svg+xml">
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -27,18 +27,18 @@
                 <section aria-labelledby="hero-heading" class="grid w-full items-center gap-12 lg:grid-cols-[1fr_1.15fr] lg:gap-12">
                     <div class="flex flex-col items-start gap-8">
                         <div class="flex flex-col gap-6">
-                            <h1 id="hero-heading" class="text-[clamp(2.125rem,9.5vw,3.25rem)] leading-[1.06] font-bold tracking-tight sm:text-6xl lg:text-[3.5rem] xl:text-[4.25rem]">
-                                <span class="block whitespace-nowrap">Simple projects.</span>
-                                <span class="block whitespace-nowrap text-teal-700">Clear tasks.</span>
+                            <h1 id="hero-heading" class="text-[clamp(1.75rem,7vw,2.5rem)] leading-[1.1] font-bold tracking-tight sm:text-5xl lg:text-[2.5rem] xl:text-[3rem]">
+                                <span class="block">Connect your AI agent.</span>
+                                <span class="block text-teal-700">Test MCP.</span>
                             </h1>
-                            <p class="max-w-md text-lg leading-8 text-stone-600">TaskNet helps you organize your work with projects and tasks — simple, clean and focused.</p>
+                            <p class="max-w-md text-lg leading-8 text-stone-600">TaskNet is a temporary project and task sandbox for testing how AI agents interact with an application through MCP.</p>
                         </div>
 
                         <div class="flex flex-col gap-4">
                             @guest
                                 <x-home-actions primary-first />
                             @endguest
-                            <p class="max-w-sm text-xs leading-5 text-stone-500">Connect your AI agent through MCP to manage your projects and tasks.</p>
+                            <p class="max-w-sm text-xs leading-5 text-stone-500">Temporary workspace · automatically deleted after {{ config('tasknet.demo.lifetime_days') }} days</p>
                         </div>
                     </div>
 

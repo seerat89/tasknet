@@ -32,7 +32,7 @@
 
                 @if (session('status'))
                     <div role="status" class="rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm leading-6 text-teal-900 dark:border-teal-800 dark:bg-teal-950 dark:text-teal-200">
-                        {{ session('status') === 'verification-link-sent' ? 'A new verification link has been sent to your email address.' : session('status') }}
+                        {{ session('status') }}
                     </div>
                 @endif
 

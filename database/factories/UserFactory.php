@@ -34,12 +34,31 @@ class UserFactory extends Factory
     }
 
     /**
-     * Indicate that the model's email address should be unverified.
+     * Indicate that the user is an active demo workspace.
      */
-    public function unverified(): static
+    public function demo(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+        return $this->state(function () {
+            $demoId = 'TN-'.fake()->unique()->regexify('[A-HJ-KM-NP-Z2-9]{6}');
+
+            return [
+                'name' => 'Demo '.Str::after($demoId, 'TN-'),
+                'email' => Str::lower($demoId).'@tasknet.local',
+                'email_verified_at' => null,
+                'demo_id' => $demoId,
+                'is_demo' => true,
+                'expires_at' => now()->addDays(config('tasknet.demo.lifetime_days')),
+            ];
+        });
+    }
+
+    /**
+     * Indicate that the demo workspace has expired.
+     */
+    public function expired(): static
+    {
+        return $this->state(fn () => [
+            'expires_at' => now()->subMinute(),
         ]);
     }
 }

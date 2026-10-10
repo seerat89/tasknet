@@ -6,21 +6,25 @@ beforeEach(function () {
     $this->withoutVite();
 });
 
-test('guests see the TaskNet homepage with registration and login links', function () {
+test('guests see the TaskNet homepage with demo calls to action', function () {
     $response = $this->get(route('home'));
 
     $response->assertSeeText([
-        'Simple projects.',
-        'Clear tasks.',
-        'TaskNet helps you organize your work with projects and tasks — simple, clean and focused.',
-        'Connect your AI agent through MCP to manage your projects and tasks.',
-        'Get started',
+        'Connect your AI agent.',
+        'Test MCP.',
+        'TaskNet is a temporary project and task sandbox for testing how AI agents interact with an application through MCP.',
+        'Start demo',
         'Log in',
-    ])->assertSee('href="'.route('register').'"', false)
+    ])->assertSee('action="'.route('demo.store').'"', false)
         ->assertSee('href="'.route('login').'"', false)
         ->assertSee('src="'.asset('brand/tasknet-logo-color.svg').'"', false)
         ->assertSee('src="'.asset('brand/tasknet-mark.svg').'"', false)
-        ->assertDontSeeText('Log out');
+        ->assertDontSeeText(['Log out', 'Get started', 'Demo login', 'Simple projects.', 'Connect your AI agent through MCP']);
+});
+
+test('the homepage states that demo workspaces are temporary', function () {
+    $this->get(route('home'))
+        ->assertSeeText('Temporary workspace · automatically deleted after 30 days');
 });
 
 test('the homepage keeps its quiet footer and decoration without an application preview', function () {
@@ -39,8 +43,8 @@ test('the homepage keeps its quiet footer and decoration without an application 
         ]);
 });
 
-test('verified users see logout instead of guest calls to action', function () {
-    $user = User::factory()->make();
+test('authenticated demo users see logout and no email verification actions', function () {
+    $user = User::factory()->demo()->make();
 
     $response = $this->actingAs($user)->get(route('home'));
 
@@ -49,18 +53,7 @@ test('verified users see logout instead of guest calls to action', function () {
         ->assertSee('method="POST"', false)
         ->assertSee('name="_token"', false)
         ->assertDontSee('href="'.route('login').'"', false)
-        ->assertDontSee('href="'.route('register').'"', false)
-        ->assertDontSee('href="'.route('verification.notice').'"', false)
-        ->assertDontSeeText('Get started');
-});
-
-test('unverified users can reach email verification from the homepage', function () {
-    $user = User::factory()->unverified()->make();
-
-    $response = $this->actingAs($user)->get(route('home'));
-
-    $response->assertSeeText(['Verify email', 'Log out'])
-        ->assertSee('href="'.route('verification.notice').'"', false)
-        ->assertDontSee('href="'.route('login').'"', false)
-        ->assertDontSee('href="'.route('register').'"', false);
+        ->assertDontSee('action="'.route('demo.store').'"', false)
+        ->assertDontSeeText(['Verify email', 'Start demo', 'Log in'])
+        ->assertDontSee('/email/verify', false);
 });

@@ -242,22 +242,21 @@ Additional domain concepts should only be introduced when required by a real fea
 
 - Laravel Fortify handles the normal web authentication flow.
 - Authentication UI is implemented with Blade.
-- Current supported web authentication features are:
-  - Registration
-  - Login and logout
-  - Password reset
-  - Email verification
+- Current supported web authentication flows are:
+  - Start demo (creates a demo workspace)
+  - Demo login (Demo ID + password) and logout
+- Registration, password reset, email verification, two-factor authentication and passkeys are intentionally disabled.
 - Do not add authentication features that do not have a product requirement.
 
-### Planned demo accounts (not implemented yet)
+### Demo accounts
 
-TaskNet is a public, temporary MCP demo. Demo workspaces are not for real or sensitive data. The planned design will replace the flow above:
+TaskNet is a public, temporary MCP demo. Demo workspaces are not for real or sensitive data.
 
 - isolated workspace per demo user
 - generated Demo ID and password, shown once
 - no real email, no email verification, no password recovery
-- 30-day expiry
-- maximum 10 projects and 100 tasks per workspace
+- 30-day expiry (`config/tasknet.php`)
+- maximum 10 projects and 100 tasks per workspace, defined in `config/tasknet.php`; enforcement is not implemented yet
 - the web UI and MCP must enforce the same authorization and limits
 
 ## Authorization
