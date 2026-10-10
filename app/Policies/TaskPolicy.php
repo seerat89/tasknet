@@ -43,10 +43,10 @@ class TaskPolicy
     }
 
     /**
-     * Task ownership is derived through its project.
+     * Task ownership is derived through its project; the user's workspace must also be active.
      */
     private function ownsTask(User $user, Task $task): bool
     {
-        return $task->project->user_id === $user->id;
+        return $user->isActiveDemo() && $task->project->user_id === $user->id;
     }
 }

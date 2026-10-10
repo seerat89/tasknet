@@ -66,3 +66,23 @@ test('expired users cannot create tasks even in their own project', function () 
 
     expect($user->can('create', [Task::class, $project]))->toBeFalse();
 });
+
+test('expired demo users cannot view, update or delete their own projects or tasks', function (string $ability) {
+    $user = User::factory()->demo()->create();
+    $project = Project::factory()->for($user)->create();
+    $task = Task::factory()->for($project)->create();
+
+    $this->travel(config('tasknet.demo.lifetime_days') + 1)->days();
+
+    expect($user->fresh()->can($ability, $project))->toBeFalse()
+        ->and($user->fresh()->can($ability, $task))->toBeFalse();
+})->with(['view', 'update', 'delete']);
+
+test('non-demo users cannot view, update or delete projects or tasks they own', function (string $ability) {
+    $user = User::factory()->create();
+    $project = Project::factory()->for($user)->create();
+    $task = Task::factory()->for($project)->create();
+
+    expect($user->can($ability, $project))->toBeFalse()
+        ->and($user->can($ability, $task))->toBeFalse();
+})->with(['view', 'update', 'delete']);
