@@ -114,8 +114,8 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 # Deployment
 
-- Laravel can be deployed using Laravel Cloud, which is the fastest way to deploy and scale production Laravel applications.
-- Activate the `deploying-to-cloud` skill whenever deploying to Laravel Cloud, configuring Cloud environments or resources, using the Cloud CLI, or troubleshooting Cloud deployments.
+- TaskNet's production deployment target is Vercel at https://tasknet.seerat.me, with Neon Postgres. It is not deployed yet.
+- TaskNet does not target Laravel Cloud; do not apply Laravel Cloud guidance to this project.
 
 === laravel/core rules ===
 
@@ -249,6 +249,17 @@ Additional domain concepts should only be introduced when required by a real fea
   - Email verification
 - Do not add authentication features that do not have a product requirement.
 
+### Planned demo accounts (not implemented yet)
+
+TaskNet is a public, temporary MCP demo. Demo workspaces are not for real or sensitive data. The planned design will replace the flow above:
+
+- isolated workspace per demo user
+- generated Demo ID and password, shown once
+- no real email, no email verification, no password recovery
+- 30-day expiry
+- maximum 10 projects and 100 tasks per workspace
+- the web UI and MCP must enforce the same authorization and limits
+
 ## Authorization
 
 - Authorization must be enforced server-side.
@@ -288,7 +299,11 @@ Additional domain concepts should only be introduced when required by a real fea
 
 ## Database
 
-- SQLite is the development database unless requirements change.
+- SQLite is the local development database.
+- Automated tests currently use in-memory SQLite (`phpunit.xml`).
+- The production target is Neon Postgres, deployed on Vercel at https://tasknet.seerat.me. Neither is set up yet.
+- Because development uses SQLite and production will use PostgreSQL, prefer standard Laravel migrations and Eloquent. Avoid SQLite-specific raw SQL, and avoid PostgreSQL-specific features unless explicitly approved.
+- Verify production migrations and important flows against Neon/PostgreSQL before launch.
 - Use migrations for schema changes.
 - Use foreign key constraints.
 - Use appropriate indexes.

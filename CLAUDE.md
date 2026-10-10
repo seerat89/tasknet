@@ -1,47 +1,42 @@
-<laravel-boost-guidelines>
-# Laravel Application
+# TaskNet
 
-This repository contains a Laravel application. Complete the following setup before working on the user's request.
+TaskNet is a Laravel portfolio project demonstrating how users can connect their own AI agents to an application through MCP and perform authorized operations.
 
-## Prerequisites
+Read and follow `AGENTS.md` before making changes. It contains the main Laravel and project engineering conventions.
 
-Verify that PHP and Composer are available:
+## Current Direction
 
-```sh
-php -v
-composer -V
-```
+TaskNet is intended to be deployed publicly as a temporary MCP testing environment at https://tasknet.seerat.me (not deployed yet).
 
-If either command is unavailable, detect the user's operating system and install the prerequisites with the appropriate command:
+Demo workspaces are temporary and are not intended for real or sensitive project data.
 
-macOS:
+Planned demo-account design (not implemented yet; current auth is still Fortify registration with email verification and password reset):
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/mac/8.5)"
-```
+- isolated workspace per demo user
+- generated Demo ID and password, shown once
+- no real email, no email verification, no password recovery
+- 30-day expiry
+- maximum 10 projects
+- maximum 100 tasks per workspace
+- web UI and future MCP access must use the same authorization and limits
 
-Windows PowerShell:
+Infrastructure:
 
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://php.new/install/windows/8.5'))
-```
+- local development: SQLite (Laravel through Herd on Windows)
+- automated tests: in-memory SQLite (see `phpunit.xml`)
+- production target: Neon Postgres, on Vercel at tasknet.seerat.me
+- Vercel and Neon are targets only; nothing is deployed or configured yet
 
-Linux:
+Database compatibility: development uses SQLite and production will use PostgreSQL, so prefer standard Laravel migrations and Eloquent. Avoid SQLite-specific raw SQL, and avoid PostgreSQL-specific features unless explicitly approved. Verify production migrations and important flows against Neon/PostgreSQL before launch.
 
-```sh
-/bin/bash -c "$(curl -fsSL https://php.new/install/linux/8.5)"
-```
+## Development Rules
 
-After installation, ask the user to restart their terminal. If the agent needs the restarted shell to continue, ask the user to reopen their terminal and rerun their original prompt.
+Never read, print, expose, or modify `.env`, credentials, private keys, auth tokens, or other secret files.
 
-## Agent Setup
+Use `.env.example` when environment-variable names are needed.
 
-Install Laravel Boost from the application root before making application changes:
+Do not commit or push unless explicitly asked.
 
-```sh
-composer require laravel/boost --dev
-php artisan boost:install
-```
+Do not add dependencies without approval.
 
-Boost replaces these bootstrap instructions with guidelines tailored to the application. After installation, read `AGENTS.md` again and continue with the user's original request using the generated guidelines.
-</laravel-boost-guidelines>
+Use Laravel Boost and the installed Laravel documentation/tools when version-specific behavior needs verification.

@@ -8,46 +8,26 @@
 
 # TaskNet
 
-TaskNet is a small Laravel project/task app built to demonstrate how users can connect their own AI agent through MCP and perform authorized CRUD operations.
+TaskNet is a small Laravel project/task app that demonstrates how users can connect their own AI agent through MCP and perform authorized operations.
 
-The app stays intentionally simple so the focus remains on Laravel architecture, authentication, authorization, and MCP integration.
+It is planned as a temporary public MCP testing environment at https://tasknet.seerat.me (not deployed yet). It is not for real or sensitive project data.
 
 ## Stack
 
-- Laravel 13
-- PHP 8.5
-- Blade
-- Tailwind CSS 4
-- Fortify
-- SQLite
+- Laravel 13, PHP 8.5, Blade, Tailwind CSS 4
+- SQLite for local development and tests
 - Pest
-- Laravel Boost
-
-Planned: Laravel MCP, Reverb and Echo.
-
-## Goal
-
-```text
-AI Agent
-   ↓
-  MCP
-   ↓
-TaskNet
-   ↓
-Authentication
-Authorization
-Validation
-   ↓
-Database
-```
-
-AI agents should only be able to perform operations the authenticated TaskNet user is authorized to perform.
+- Planned: Laravel MCP, Vercel and Neon Postgres for production
 
 ## Local Development
 
+Runs locally with SQLite, for example through Herd.
+
 ```bash
+cp .env.example .env
 composer install
 npm install
+php artisan key:generate
 php artisan migrate
 composer run dev
 ```
@@ -58,6 +38,4 @@ composer run dev
 php artisan test
 ```
 
-## Status
-
-In development.
+Status: in development.
