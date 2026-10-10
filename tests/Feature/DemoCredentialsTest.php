@@ -67,7 +67,7 @@ test('the credentials can be downloaded as a text file', function () {
 test('continuing removes the plaintext credentials from the session', function () {
     $response = $this->post(route('demo.credentials.continue'));
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('dashboard'));
     expect(session()->has('demo_credentials'))->toBeFalse();
     $this->assertAuthenticatedAs($this->user);
 });
@@ -76,7 +76,7 @@ test('the credentials cannot be redisplayed after continuing', function () {
     $this->post(route('demo.credentials.continue'));
 
     $this->get(route('demo.credentials'))
-        ->assertRedirect(route('home'));
+        ->assertRedirect(route('dashboard'));
     $this->get(route('home'))->assertDontSee($this->password);
 });
 
@@ -85,7 +85,7 @@ test('the download cannot expose the credentials after continuing', function () 
 
     $response = $this->get(route('demo.credentials.download'));
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('dashboard'));
     expect($response->getContent())->not->toContain($this->password);
 });
 

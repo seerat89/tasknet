@@ -77,3 +77,17 @@ document.addEventListener('change', (event) => {
 });
 
 window.addEventListener('pageshow', syncContinue);
+
+document.addEventListener('click', (event) => {
+    const opener = event.target.closest('[data-dialog-open]');
+
+    if (opener) {
+        document.getElementById(opener.dataset.dialogOpen)?.showModal();
+
+        return;
+    }
+
+    if (event.target.closest('[data-dialog-close]')) {
+        event.target.closest('dialog')?.close();
+    }
+});

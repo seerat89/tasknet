@@ -34,7 +34,7 @@ test('returning demo users can log in with their Demo ID and password', function
         'remember' => '1',
     ]);
 
-    $response->assertRedirect(route('home'));
+    $response->assertRedirect(route('dashboard'));
     $this->assertAuthenticatedAs($user);
     $this->get(route('home'))->assertSeeText('Log out');
 });
@@ -45,7 +45,7 @@ test('the Demo ID is accepted in any letter case', function (string $submittedDe
     $this->post(route('login.store'), [
         'demo_id' => '  '.$submittedDemoId.' ',
         'password' => 'correct-test-password',
-    ])->assertRedirect(route('home'));
+    ])->assertRedirect(route('dashboard'));
 
     $this->assertAuthenticatedAs($user);
 })->with([
@@ -140,7 +140,7 @@ test('demo users can log out', function () {
 test('authenticated users are kept away from the login form', function () {
     $user = User::factory()->demo()->create();
 
-    $this->actingAs($user)->get(route('login'))->assertRedirect(route('home'));
+    $this->actingAs($user)->get(route('login'))->assertRedirect(route('dashboard'));
 });
 
 test('registration, password reset, email verification and other obsolete flows are unavailable', function (string $method, string $uri) {

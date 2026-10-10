@@ -38,6 +38,9 @@
                             @guest
                                 <x-home-actions primary-first />
                             @endguest
+                            @auth
+                                <x-link-button :href="route('dashboard')" class="min-w-40">Open dashboard</x-link-button>
+                            @endauth
                             <p class="max-w-sm text-xs leading-5 text-stone-500">Temporary workspace · automatically deleted after {{ config('tasknet.demo.lifetime_days') }} days</p>
                         </div>
                     </div>

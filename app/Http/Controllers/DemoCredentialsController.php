@@ -20,7 +20,7 @@ class DemoCredentialsController extends Controller
         $credentials = $this->credentials($request);
 
         if ($credentials === null) {
-            return redirect()->route('home');
+            return redirect()->route('dashboard');
         }
 
         return response()->view('demo.credentials', [
@@ -38,7 +38,7 @@ class DemoCredentialsController extends Controller
         $credentials = $this->credentials($request);
 
         if ($credentials === null) {
-            return redirect()->route('home');
+            return redirect()->route('dashboard');
         }
 
         return response($this->credentialsText($credentials), 200, [
@@ -55,7 +55,7 @@ class DemoCredentialsController extends Controller
     {
         $request->session()->forget('demo_credentials');
 
-        return redirect()->route('home');
+        return redirect()->route('dashboard');
     }
 
     /**

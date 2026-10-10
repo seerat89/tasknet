@@ -79,7 +79,7 @@ test('the new demo user is authenticated', function () {
 test('authenticated users cannot start another demo workspace', function () {
     $user = User::factory()->demo()->create();
 
-    $this->actingAs($user)->post(route('demo.store'))->assertRedirect(route('home'));
+    $this->actingAs($user)->post(route('demo.store'))->assertRedirect(route('dashboard'));
 
     expect(User::count())->toBe(1);
 });
