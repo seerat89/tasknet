@@ -25,7 +25,7 @@ It is planned as a temporary public MCP testing environment at https://tasknet.s
 - PostgreSQL 18 for local development; in-memory SQLite for tests
 - Pest
 - Docker Compose for reproducible development
-- In progress: Laravel MCP + OAuth integration
+- Laravel MCP + Laravel Passport (OAuth) for AI clients
 - Production target: Vercel + Neon PostgreSQL
 
 ## Quick start
@@ -42,6 +42,12 @@ docker compose up -d --build
 Open http://localhost:8000
 
 The first start installs dependencies and runs migrations automatically. See [docs/development.md](docs/development.md) for the full development setup.
+
+## MCP
+
+AI clients connect to `/mcp` (locally http://localhost:8000/mcp) using OAuth. You approve the connection on a TaskNet screen while signed in with your Demo ID, so the AI client never receives your password. MCP tools run with the same permissions, limits and business rules as the web UI.
+
+Tools: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task`, `update_task`. There are no delete tools yet.
 
 ## Architecture
 

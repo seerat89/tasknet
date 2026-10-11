@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('tasknet:cleanup-demos')->daily();
+Schedule::command('passport:purge')->daily();

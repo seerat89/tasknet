@@ -76,6 +76,24 @@ docker compose run --rm node npm install
 
 If you run a command before the first `docker compose up`, `vendor` is still empty; run `docker compose run --rm app composer install` first.
 
+## MCP and OAuth
+
+TaskNet exposes an MCP server at http://localhost:8000/mcp (production: https://tasknet.seerat.me/mcp). Remote clients authenticate with OAuth through Laravel Passport:
+
+1. The client calls `/mcp` and receives `401` with a `WWW-Authenticate` header pointing at `/.well-known/oauth-protected-resource/mcp`.
+2. It reads the OAuth metadata (`/.well-known/oauth-authorization-server`) and registers itself as a public client at `POST /oauth/register`.
+3. It sends the user to `/oauth/authorize` (authorization code with PKCE, scope `mcp:use`). The user signs in with their Demo ID and password on TaskNet and sees an Approve/Deny screen. The AI client never sees the password.
+4. The client exchanges the code at `/oauth/token` for an access token (valid one day) and a refresh token.
+5. Each `/mcp` request runs as that user. Expired demo workspaces are rejected even with a valid token.
+
+Only the authorization code and refresh token grants are enabled. MCP tools reuse the same actions and policies as the web UI, so the 10-project and 100-task limits apply. They never accept `user_id`, `demo_id` or `email` as input.
+
+Tools: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task`, `update_task`.
+
+OAuth signing keys are generated into `storage/oauth-private.key` and `storage/oauth-public.key` on first start. They are git-ignored; never commit them. For Vercel, set `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` environment variables instead. To rotate keys locally, run `docker compose run --rm app php artisan passport:keys --force` (existing tokens stop working).
+
+To try the server, point any MCP client that supports OAuth at the `/mcp` URL, or use the MCP Inspector.
+
 ## Tests
 
 The test suite uses in-memory SQLite (see `phpunit.xml`) and does not touch the Docker PostgreSQL database.
