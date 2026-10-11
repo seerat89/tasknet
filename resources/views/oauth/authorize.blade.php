@@ -1,3 +1,8 @@
+@php
+    $registeredUris = collect($client->redirect_uris ?? []);
+    $returnUri = $registeredUris->contains($request->redirect_uri) ? $request->redirect_uri : $registeredUris->first();
+    $returnHost = parse_url((string) $returnUri, PHP_URL_HOST) ?: null;
+@endphp
 <x-auth-layout title="Connect an AI client" description="An external AI client wants to use TaskNet on your behalf.">
     <dl class="flex flex-col gap-4 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-950">
         <div class="flex flex-col gap-1">
@@ -8,6 +13,12 @@
             <dt class="text-xs font-medium tracking-wide text-stone-500 uppercase dark:text-stone-400">AI client requesting access</dt>
             <dd class="text-lg font-semibold break-words">{{ $client->name }}</dd>
         </div>
+        @if ($returnHost)
+            <div class="flex flex-col gap-1">
+                <dt class="text-xs font-medium tracking-wide text-stone-500 uppercase dark:text-stone-400">Returning to</dt>
+                <dd class="font-mono text-sm font-semibold break-all">{{ $returnHost }}</dd>
+            </div>
+        @endif
     </dl>
 
     <section aria-labelledby="access-heading" class="flex flex-col gap-3">

@@ -31,4 +31,17 @@ return [
         'tasks' => 100,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | MCP Rate Limit
+    |--------------------------------------------------------------------------
+    |
+    | Maximum authenticated /mcp requests per minute for each workspace.
+    |
+    */
+
+    'mcp' => [
+        'requests_per_minute' => (int) env('MCP_RATE_LIMIT', 120),
+    ],
+
 ];

@@ -30,7 +30,7 @@ class StoreTaskRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'status' => ['required', Rule::enum(TaskStatus::class)],
             'priority' => ['required', Rule::enum(TaskPriority::class)],
-            'due_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 }

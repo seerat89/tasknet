@@ -15,4 +15,5 @@ Mcp::web('/mcp', TaskNetServer::class)->middleware([
     'auth:api',
     CheckToken::using('mcp:use'),
     EnsureDemoWorkspaceIsActiveForMcp::class,
+    'throttle:mcp',
 ]);

@@ -32,6 +32,13 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->ip());
         });
 
+        RateLimiter::for('mcp', function (Request $request) {
+            $workspace = $request->user('api');
+
+            return Limit::perMinute(config('tasknet.mcp.requests_per_minute'))
+                ->by($workspace ? 'workspace:'.$workspace->getAuthIdentifier() : $request->ip());
+        });
+
         $this->configurePassport();
     }
 
