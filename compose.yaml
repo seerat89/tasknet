@@ -1,0 +1,63 @@
+name: tasknet
+
+services:
+  app:
+    build: .
+    # Bootstrap on every start; each step is skipped when already done.
+    # PostgreSQL is ready here because of depends_on (service_healthy) below.
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        [ -f vendor/autoload.php ] || composer install --no-interaction
+        grep -q '^APP_KEY=.\+' .env || php artisan key:generate --no-interaction
+        php artisan migrate --force --no-interaction
+        exec php artisan serve --host=0.0.0.0 --port=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html
+      # Keep vendor/ off the slow Windows/macOS bind mount.
+      - vendor:/var/www/html/vendor
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: tasknet
+      POSTGRES_USER: tasknet_app
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Copy .env.example to .env first}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tasknet_app -d tasknet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  node:
+    image: node:24-alpine
+    working_dir: /var/www/html
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        [ -x node_modules/.bin/vite ] || npm install
+        exec npm run dev -- --host 0.0.0.0
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/var/www/html
+      # Keep Linux-native packages out of the host checkout (Windows/macOS node_modules differ).
+      - node-modules:/var/www/html/node_modules
+
+volumes:
+  postgres-data:
+  vendor:
+  node-modules:
