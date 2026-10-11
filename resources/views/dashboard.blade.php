@@ -1,4 +1,4 @@
-<x-app-layout title="Projects">
+<x-app-layout title="Projects" :realtime="true">
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex flex-col gap-2">
             <h1 class="text-2xl font-semibold tracking-tight">Projects</h1>

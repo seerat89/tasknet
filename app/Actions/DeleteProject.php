@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\ChangeType;
+use App\Events\ProjectChanged;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,5 +21,7 @@ class DeleteProject
         Gate::forUser($user)->authorize('delete', $project);
 
         $project->delete();
+
+        ProjectChanged::announce($user, ChangeType::Deleted);
     }
 }

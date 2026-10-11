@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\ChangeType;
+use App\Events\TaskChanged;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -29,6 +31,8 @@ class UpdateTask
         Gate::forUser($user)->authorize('update', $task);
 
         $task->update(Arr::only($data, ['title', 'description', 'status', 'priority', 'due_date']));
+
+        TaskChanged::announce($user, ChangeType::Updated);
 
         return $task;
     }

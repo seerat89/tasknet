@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\ChangeType;
+use App\Events\TaskChanged;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -24,7 +26,7 @@ class CreateTask
     {
         Gate::forUser($user)->authorize('create', [Task::class, $project]);
 
-        return DB::transaction(function () use ($user, $project, $data): Task {
+        $task = DB::transaction(function () use ($user, $project, $data): Task {
             // Serialize concurrent creations for this workspace so the limit cannot be exceeded.
             User::query()->whereKey($user->getKey())->lockForUpdate()->first();
 
@@ -38,5 +40,9 @@ class CreateTask
 
             return $project->tasks()->create($data);
         });
+
+        TaskChanged::announce($user, ChangeType::Created);
+
+        return $task;
     }
 }

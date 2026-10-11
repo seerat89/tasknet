@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\ChangeType;
+use App\Events\ProjectChanged;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -23,7 +25,7 @@ class CreateProject
     {
         Gate::forUser($user)->authorize('create', Project::class);
 
-        return DB::transaction(function () use ($user, $data): Project {
+        $project = DB::transaction(function () use ($user, $data): Project {
             // Serialize concurrent creations for this workspace so the limit cannot be exceeded.
             User::query()->whereKey($user->getKey())->lockForUpdate()->first();
 
@@ -37,5 +39,9 @@ class CreateProject
 
             return $user->projects()->create($data);
         });
+
+        ProjectChanged::announce($user, ChangeType::Created);
+
+        return $project;
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\ChangeType;
+use App\Events\ProjectChanged;
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -22,6 +24,8 @@ class UpdateProject
         Gate::forUser($user)->authorize('update', $project);
 
         $project->update(Arr::only($data, ['name', 'description']));
+
+        ProjectChanged::announce($user, ChangeType::Updated);
 
         return $project;
     }

@@ -25,6 +25,21 @@ services:
       postgres:
         condition: service_healthy
 
+  reverb:
+    build: .
+    # Waits for the app service to finish installing Composer dependencies on a fresh clone.
+    command:
+      - sh
+      - -c
+      - |
+        until [ -f vendor/autoload.php ]; do sleep 2; done
+        exec php artisan reverb:start --no-interaction
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/var/www/html
+      - vendor:/var/www/html/vendor
+
   postgres:
     image: postgres:18-alpine
     environment:

@@ -1,3 +1,5 @@
+import './realtime';
+
 let credentialsSaved = false;
 
 const acknowledgement = () => document.querySelector('[data-acknowledge]');

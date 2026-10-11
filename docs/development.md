@@ -34,6 +34,7 @@ Dependency installation and key generation are skipped when already complete. Da
 | `app`      | PHP 8.5, `artisan serve` | 8000                                            |
 | `postgres` | PostgreSQL 18            | 5434 on the host, `postgres:5432` inside Docker |
 | `node`     | Node 24, Vite dev server | 5173                                            |
+| `reverb`   | Laravel Reverb WebSockets | 8080                                           |
 
 Laravel inside Docker connects with `DB_HOST=postgres` and `DB_PORT=5432`.
 
@@ -92,7 +93,41 @@ Tools: `list_projects`, `get_project`, `create_project`, `update_project`, `list
 
 OAuth signing keys are generated into `storage/oauth-private.key` and `storage/oauth-public.key` on first start. They are git-ignored; never commit them. For Vercel, set `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` environment variables instead. To rotate keys locally, run `docker compose run --rm app php artisan passport:keys --force` (existing tokens stop working).
 
-To try the server, point any MCP client that supports OAuth at the `/mcp` URL, or use the MCP Inspector.
+### Testing with MCP Inspector
+
+The official [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is the quickest way to check the OAuth flow, tool discovery, schemas and tool execution. It needs Node on your machine and runs outside Docker:
+
+1. Start TaskNet: `docker compose up -d`.
+2. Start the Inspector:
+
+   ```bash
+   npx @modelcontextprotocol/inspector --server-url http://localhost:8000/mcp --transport http
+   ```
+
+3. Connect to `http://localhost:8000/mcp`. When the Inspector sends you to TaskNet, sign in with a demo workspace's Demo ID and password (create one on the home page) and approve the connection.
+4. Open the Tools tab to see the eight tools and their schemas, then run `list_projects`, `create_project`, `create_task` and so on.
+
+The Inspector validates exactly what a real AI client sees: the OAuth handshake, the MCP connection, discovery, input schemas and tool results.
+
+## Realtime updates
+
+Open dashboard and project pages update themselves when a project or task changes, whether the change came from the web UI, an MCP client or the Inspector. There is no polling.
+
+```
+web controller / MCP tool
+  → shared action (CreateProject, UpdateTask, ...)
+  → ProjectChanged / TaskChanged event (after the change is saved)
+  → Laravel Reverb (WebSocket server)
+  → Laravel Echo in the browser
+  → debounced page reload
+```
+
+- Events are broadcast from the shared action layer, so every interface behaves the same. They are sent immediately (`ShouldBroadcastNow`), so no queue worker is needed.
+- Each workspace has one private channel, `workspace.{id}`. `routes/channels.php` only authorizes the active owner of that workspace, and the payload carries nothing but the kind of change (`created`, `updated` or `deleted`). If Reverb is down, the change is still saved and the error is reported.
+- Only the dashboard and project detail pages listen. Forms are never reloaded under you, and a reload waits while the tab is hidden or a dialog is open.
+- The browser reaches Reverb on `localhost:8080`, while the Laravel containers reach it as `reverb:8080`. Both are set in `.env.example` (`REVERB_*` for the server side, `VITE_REVERB_*` for the browser).
+
+If you created `.env` before realtime was added, copy the new `BROADCAST_CONNECTION`, `REVERB_*` and `VITE_REVERB_*` lines from `.env.example` into it, then run `docker compose up -d` (this starts the `reverb` service) and `docker compose restart node` so Vite picks up the new variables. A WebSocket server is not available on Vercel, so production realtime needs Reverb hosted elsewhere.
 
 ## Tests
 

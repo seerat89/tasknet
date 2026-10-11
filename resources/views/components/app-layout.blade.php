@@ -1,4 +1,4 @@
-@props(['title'])
+@props(['title', 'realtime' => false])
 
 @php
     $expiryClasses = [
@@ -14,6 +14,10 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+        @if ($realtime)
+            <meta name="workspace-channel" content="workspace.{{ auth()->id() }}">
+        @endif
         <title>{{ $title }} · TaskNet</title>
         <link rel="icon" href="{{ asset('brand/tasknet-mark.svg') }}" type="image/svg+xml">
         @fonts

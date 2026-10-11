@@ -2,6 +2,8 @@
 
 namespace App\Actions;
 
+use App\Enums\ChangeType;
+use App\Events\TaskChanged;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
@@ -26,5 +28,7 @@ class DeleteTask
         Gate::forUser($user)->authorize('delete', $task);
 
         $task->delete();
+
+        TaskChanged::announce($user, ChangeType::Deleted);
     }
 }

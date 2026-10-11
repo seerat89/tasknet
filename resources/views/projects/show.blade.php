@@ -4,7 +4,7 @@
     $taskLimitReached = $taskCount >= $taskLimit;
 @endphp
 
-<x-app-layout :title="$project->name">
+<x-app-layout :title="$project->name" :realtime="true">
     <x-breadcrumbs :items="[['Projects', route('dashboard')], [$project->name, null]]" />
 
     <div class="flex flex-wrap items-start justify-between gap-4">
