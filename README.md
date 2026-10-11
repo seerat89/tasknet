@@ -48,7 +48,7 @@ The first start installs dependencies and runs migrations automatically. See [do
 
 AI clients connect to `/mcp` (locally http://localhost:8000/mcp) using OAuth. You approve the connection on a TaskNet screen while signed in with your Demo ID, so the AI client never receives your password. MCP tools run with the same permissions, limits and business rules as the web UI.
 
-Tools: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task`, `update_task`. There are no delete tools yet. You can try the server locally with the official [MCP Inspector](docs/development.md#testing-with-mcp-inspector).
+Tools: `list_projects`, `get_project`, `list_tasks` and `get_task` are advertised directly; `create_project`, `update_project`, `create_task` and `update_task` are reached through `search_tools` and `execute_tools`. There are no delete tools yet. TaskNet uses this split to demonstrate [progressive tool disclosure](docs/development.md#progressive-tool-disclosure), not because eight tools need it. You can try the server locally with the official [MCP Inspector](docs/development.md#testing-with-mcp-inspector).
 
 Open dashboard and project pages update live when a project or task changes, whether through the web UI or MCP. The shared application layer broadcasts changes and the browser listens through Laravel Reverb and Echo ([details](docs/development.md#realtime-updates)).
 

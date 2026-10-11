@@ -6,7 +6,6 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
-use Illuminate\Testing\TestResponse;
 use Laravel\Passport\Client;
 use Laravel\Passport\Passport;
 
@@ -27,21 +26,6 @@ afterEach(function () {
         File::deleteDirectory($this->keyPath);
     }
 });
-
-/**
- * Send a JSON-RPC request to the MCP endpoint.
- *
- * @param  array<string, mixed>  $params
- */
-function mcpRequest(mixed $test, string $method, array $params = []): TestResponse
-{
-    return $test->postJson('/mcp', [
-        'jsonrpc' => '2.0',
-        'id' => 1,
-        'method' => $method,
-        'params' => (object) $params,
-    ]);
-}
 
 /**
  * Use throwaway OAuth keys so tests do not depend on files in storage/.
@@ -79,15 +63,12 @@ test('a token without the MCP scope is rejected', function () {
     mcpRequest($this, 'tools/list')->assertForbidden();
 });
 
-test('an authenticated OAuth user can list exactly the eight tools', function () {
+test('an authenticated OAuth user lists the read tools and the tool catalog', function () {
     Passport::actingAs($this->user, ['mcp:use'], 'api');
 
     $tools = mcpRequest($this, 'tools/list')->assertOk()->json('result.tools.*.name');
 
-    expect($tools)->toBe([
-        'list_projects', 'get_project', 'create_project', 'update_project',
-        'list_tasks', 'get_task', 'create_task', 'update_task',
-    ]);
+    expect($tools)->toBe(['list_projects', 'get_project', 'list_tasks', 'get_task', 'search_tools', 'execute_tools']);
 });
 
 test('an authenticated OAuth user only sees their own workspace', function () {
@@ -104,14 +85,13 @@ test('creating a project over HTTP uses the OAuth user and the existing limits',
     config()->set('tasknet.limits.projects', 2);
     Passport::actingAs($this->user, ['mcp:use'], 'api');
 
-    mcpRequest($this, 'tools/call', ['name' => 'create_project', 'arguments' => ['name' => 'Second', 'user_id' => $this->otherUser->id]])
-        ->assertOk()
-        ->assertJsonPath('result.isError', false);
+    executeCatalogTool($this, 'create_project', ['name' => 'Second', 'user_id' => $this->otherUser->id])
+        ->assertOk();
 
-    $limited = mcpRequest($this, 'tools/call', ['name' => 'create_project', 'arguments' => ['name' => 'Third']])->assertOk();
+    $limited = executeCatalogTool($this, 'create_project', ['name' => 'Third'])->assertOk();
 
-    expect($limited->json('result.isError'))->toBeTrue()
-        ->and($limited->getContent())->toContain('You can create up to 2 projects')
+    expect(mcpResult($limited)['isError'])->toBeTrue()
+        ->and(json_encode(mcpResult($limited)))->toContain('You can create up to 2 projects')
         ->and($this->user->projects()->count())->toBe(2)
         ->and($this->otherUser->projects()->count())->toBe(1);
 });
@@ -121,7 +101,7 @@ test('an expired demo workspace cannot use MCP even with a valid token', functio
     Passport::actingAs($expired, ['mcp:use'], 'api');
 
     mcpRequest($this, 'tools/list')->assertForbidden();
-    mcpRequest($this, 'tools/call', ['name' => 'create_project', 'arguments' => ['name' => 'Too late']])->assertForbidden();
+    executeCatalogTool($this, 'create_project', ['name' => 'Too late'])->assertForbidden();
 
     expect($expired->projects()->count())->toBe(0);
 });

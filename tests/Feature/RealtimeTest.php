@@ -10,7 +10,6 @@ use App\Enums\ChangeType;
 use App\Events\ProjectChanged;
 use App\Events\TaskChanged;
 use App\Http\Middleware\EnsureDemoWorkspaceIsActive;
-use App\Mcp\Servers\TaskNetServer;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\Project;
@@ -181,8 +180,8 @@ test('web requests announce changes through the shared actions', function () {
 test('MCP tools announce changes through the shared actions', function () {
     Event::fake([ProjectChanged::class, TaskChanged::class]);
 
-    TaskNetServer::actingAs($this->user, 'api')->tool(CreateProjectTool::class, ['name' => 'From MCP'])->assertOk();
-    TaskNetServer::actingAs($this->user, 'api')->tool(UpdateTaskTool::class, [
+    callMcpTool($this->user, CreateProjectTool::class, ['name' => 'From MCP'])->assertOk();
+    callMcpTool($this->user, UpdateTaskTool::class, [
         'project_id' => $this->project->id,
         'task_id' => $this->task->id,
         'title' => 'From MCP',

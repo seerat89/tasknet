@@ -89,7 +89,17 @@ TaskNet exposes an MCP server at http://localhost:8000/mcp (production: https://
 
 Only the authorization code and refresh token grants are enabled. MCP tools reuse the same actions and policies as the web UI, so the 10-project and 100-task limits apply. They never accept `user_id`, `demo_id` or `email` as input.
 
-Tools: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task`, `update_task`.
+Tools: `list_projects`, `get_project`, `list_tasks` and `get_task` are advertised directly. `create_project`, `update_project`, `create_task` and `update_task` are in a searchable catalog (see [Progressive tool disclosure](#progressive-tool-disclosure)). There are no delete tools yet.
+
+### Progressive tool disclosure
+
+A client normally receives every tool definition and schema up front, which costs tokens on every conversation and grows with the server. TaskNet demonstrates the alternative with Laravel MCP's `ToolSearch` catalog (`app/Mcp/Servers/TaskNetServer.php`):
+
+- Frequently used read tools are advertised directly in `tools/list`.
+- Less frequent mutation tools are registered under `ToolSearch::class`. They are not in `tools/list` and cannot be called directly. Laravel MCP adds two tools instead: `search_tools` returns matching tools with their exact names and full input schemas, and `execute_tools` runs one or more of them in order.
+- The catalog changes nothing about security: catalog tools run as the same OAuth user, use the same actions and policies, and are subject to the same limits and workspace expiry.
+
+With only eight tools this is not needed. It is included to show a design that scales: as a server grows, clients do not need every schema up front. `tools/list` returns `list_projects`, `get_project`, `list_tasks`, `get_task`, `search_tools`, `execute_tools`.
 
 OAuth signing keys are generated into `storage/oauth-private.key` and `storage/oauth-public.key` on first start. They are git-ignored; never commit them. For Vercel, set `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` environment variables instead. To rotate keys locally, run `docker compose run --rm app php artisan passport:keys --force` (existing tokens stop working).
 
@@ -105,7 +115,7 @@ The official [MCP Inspector](https://github.com/modelcontextprotocol/inspector) 
    ```
 
 3. Connect to `http://localhost:8000/mcp`. When the Inspector sends you to TaskNet, sign in with a demo workspace's Demo ID and password (create one on the home page) and approve the connection.
-4. Open the Tools tab to see the eight tools and their schemas, then run `list_projects`, `create_project`, `create_task` and so on.
+4. Open the Tools tab to see the directly advertised tools and their schemas, then run `list_projects` or `get_task`. Use `search_tools` (for example with the query `create task`) to find the catalog tools, then `execute_tools` with `{"calls":[{"name":"create_task","arguments":{...}}]}`.
 
 The Inspector validates exactly what a real AI client sees: the OAuth handshake, the MCP connection, discovery, input schemas and tool results.
 

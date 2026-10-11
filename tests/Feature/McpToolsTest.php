@@ -1,6 +1,5 @@
 <?php
 
-use App\Mcp\Servers\TaskNetServer;
 use App\Mcp\Tools\CreateProjectTool;
 use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\GetProjectTool;
@@ -13,7 +12,6 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Laravel\Mcp\Server\Testing\PendingTestResponse;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -28,13 +26,8 @@ beforeEach(function () {
     $this->otherTask = Task::factory()->for($this->otherProject)->create(['title' => 'Secret task']);
 });
 
-function mcpAs(User $user): PendingTestResponse
-{
-    return TaskNetServer::actingAs($user, 'api');
-}
-
 test('list_projects returns only the authenticated users projects', function () {
-    mcpAs($this->user)->tool(ListProjectsTool::class)
+    callMcpTool($this->user, ListProjectsTool::class)
         ->assertOk()
         ->assertSee('Launch plan')
         ->assertDontSee('Secret roadmap')
@@ -46,65 +39,65 @@ test('list_projects returns only the authenticated users projects', function () 
 });
 
 test('get_project returns an own project', function () {
-    mcpAs($this->user)->tool(GetProjectTool::class, ['project_id' => $this->project->id])
+    callMcpTool($this->user, GetProjectTool::class, ['project_id' => $this->project->id])
         ->assertOk()
         ->assertSee('Launch plan');
 });
 
 test('get_project does not reveal another workspaces project', function () {
-    mcpAs($this->user)->tool(GetProjectTool::class, ['project_id' => $this->otherProject->id])
+    callMcpTool($this->user, GetProjectTool::class, ['project_id' => $this->otherProject->id])
         ->assertHasErrors(['Project not found.'])
         ->assertDontSee('Secret roadmap');
 });
 
 test('get_project reports a missing project the same way as a foreign one', function () {
-    mcpAs($this->user)->tool(GetProjectTool::class, ['project_id' => 999999])
+    callMcpTool($this->user, GetProjectTool::class, ['project_id' => 999999])
         ->assertHasErrors(['Project not found.']);
 });
 
 test('list_tasks returns only tasks of an own project and supports filters', function () {
     Task::factory()->for($this->project)->create(['title' => 'Already shipped', 'status' => 'completed']);
 
-    mcpAs($this->user)->tool(ListTasksTool::class, ['project_id' => $this->project->id])
+    callMcpTool($this->user, ListTasksTool::class, ['project_id' => $this->project->id])
         ->assertOk()
         ->assertSee(['Write the announcement', 'Already shipped'])
         ->assertDontSee('Secret task');
 
-    mcpAs($this->user)->tool(ListTasksTool::class, ['project_id' => $this->project->id, 'status' => 'completed'])
+    callMcpTool($this->user, ListTasksTool::class, ['project_id' => $this->project->id, 'status' => 'completed'])
         ->assertOk()
         ->assertSee('Already shipped')
         ->assertDontSee('Write the announcement');
 });
 
 test('list_tasks rejects a project from another workspace', function () {
-    mcpAs($this->user)->tool(ListTasksTool::class, ['project_id' => $this->otherProject->id])
+    callMcpTool($this->user, ListTasksTool::class, ['project_id' => $this->otherProject->id])
         ->assertHasErrors(['Project not found.'])
         ->assertDontSee('Secret task');
 });
 
 test('list_tasks validates the status filter', function () {
-    mcpAs($this->user)->tool(ListTasksTool::class, ['project_id' => $this->project->id, 'status' => 'archived'])
+    callMcpTool($this->user, ListTasksTool::class, ['project_id' => $this->project->id, 'status' => 'archived'])
         ->assertHasErrors();
 });
 
 test('get_task returns an own task', function () {
-    mcpAs($this->user)->tool(GetTaskTool::class, ['project_id' => $this->project->id, 'task_id' => $this->task->id])
+    callMcpTool($this->user, GetTaskTool::class, ['project_id' => $this->project->id, 'task_id' => $this->task->id])
         ->assertOk()
         ->assertSee('Write the announcement');
 });
 
 test('get_task does not reveal another workspaces task', function () {
-    mcpAs($this->user)->tool(GetTaskTool::class, ['project_id' => $this->otherProject->id, 'task_id' => $this->otherTask->id])
+    callMcpTool($this->user, GetTaskTool::class, ['project_id' => $this->otherProject->id, 'task_id' => $this->otherTask->id])
         ->assertHasErrors(['Project not found.'])
         ->assertDontSee('Secret task');
 
-    mcpAs($this->user)->tool(GetTaskTool::class, ['project_id' => $this->project->id, 'task_id' => $this->otherTask->id])
+    callMcpTool($this->user, GetTaskTool::class, ['project_id' => $this->project->id, 'task_id' => $this->otherTask->id])
         ->assertHasErrors(['Task not found.'])
         ->assertDontSee('Secret task');
 });
 
 test('create_project creates a project owned by the authenticated user', function () {
-    mcpAs($this->user)->tool(CreateProjectTool::class, ['name' => 'From my agent', 'description' => 'Created over MCP'])
+    callMcpTool($this->user, CreateProjectTool::class, ['name' => 'From my agent', 'description' => 'Created over MCP'])
         ->assertOk()
         ->assertSee('From my agent');
 
@@ -115,7 +108,7 @@ test('create_project creates a project owned by the authenticated user', functio
 });
 
 test('create_project ignores ownership identifiers in the input', function () {
-    mcpAs($this->user)->tool(CreateProjectTool::class, [
+    callMcpTool($this->user, CreateProjectTool::class, [
         'name' => 'Not stolen',
         'user_id' => $this->otherUser->id,
         'demo_id' => $this->otherUser->demo_id,
@@ -127,8 +120,8 @@ test('create_project ignores ownership identifiers in the input', function () {
 });
 
 test('create_project validates its input', function () {
-    mcpAs($this->user)->tool(CreateProjectTool::class, [])->assertHasErrors(['name']);
-    mcpAs($this->user)->tool(CreateProjectTool::class, ['name' => str_repeat('a', 121)])->assertHasErrors();
+    callMcpTool($this->user, CreateProjectTool::class, [])->assertHasErrors(['name']);
+    callMcpTool($this->user, CreateProjectTool::class, ['name' => str_repeat('a', 121)])->assertHasErrors();
 
     expect($this->user->projects()->count())->toBe(1);
 });
@@ -136,8 +129,8 @@ test('create_project validates its input', function () {
 test('create_project enforces the workspace project limit', function () {
     config()->set('tasknet.limits.projects', 2);
 
-    mcpAs($this->user)->tool(CreateProjectTool::class, ['name' => 'Second'])->assertOk();
-    mcpAs($this->user)->tool(CreateProjectTool::class, ['name' => 'Third'])
+    callMcpTool($this->user, CreateProjectTool::class, ['name' => 'Second'])->assertOk();
+    callMcpTool($this->user, CreateProjectTool::class, ['name' => 'Third'])
         ->assertHasErrors(['You can create up to 2 projects in a demo workspace.']);
 
     expect($this->user->projects()->count())->toBe(2);
@@ -146,7 +139,7 @@ test('create_project enforces the workspace project limit', function () {
 test('update_project changes only the supplied fields', function () {
     $this->project->update(['description' => 'Original description']);
 
-    mcpAs($this->user)->tool(UpdateProjectTool::class, ['project_id' => $this->project->id, 'name' => 'Renamed'])
+    callMcpTool($this->user, UpdateProjectTool::class, ['project_id' => $this->project->id, 'name' => 'Renamed'])
         ->assertOk();
 
     expect($this->project->fresh())
@@ -157,28 +150,28 @@ test('update_project changes only the supplied fields', function () {
 test('update_project can clear the description', function () {
     $this->project->update(['description' => 'Soon gone']);
 
-    mcpAs($this->user)->tool(UpdateProjectTool::class, ['project_id' => $this->project->id, 'description' => null])
+    callMcpTool($this->user, UpdateProjectTool::class, ['project_id' => $this->project->id, 'description' => null])
         ->assertOk();
 
     expect($this->project->fresh()->description)->toBeNull();
 });
 
 test('update_project rejects an empty name', function () {
-    mcpAs($this->user)->tool(UpdateProjectTool::class, ['project_id' => $this->project->id, 'name' => ''])
+    callMcpTool($this->user, UpdateProjectTool::class, ['project_id' => $this->project->id, 'name' => ''])
         ->assertHasErrors();
 
     expect($this->project->fresh()->name)->toBe('Launch plan');
 });
 
 test('update_project cannot modify another workspaces project', function () {
-    mcpAs($this->user)->tool(UpdateProjectTool::class, ['project_id' => $this->otherProject->id, 'name' => 'Hijacked'])
+    callMcpTool($this->user, UpdateProjectTool::class, ['project_id' => $this->otherProject->id, 'name' => 'Hijacked'])
         ->assertHasErrors(['Project not found.']);
 
     expect($this->otherProject->fresh()->name)->toBe('Secret roadmap');
 });
 
 test('update_project cannot change the owner', function () {
-    mcpAs($this->user)->tool(UpdateProjectTool::class, [
+    callMcpTool($this->user, UpdateProjectTool::class, [
         'project_id' => $this->project->id,
         'name' => 'Still mine',
         'user_id' => $this->otherUser->id,
@@ -188,18 +181,19 @@ test('update_project cannot change the owner', function () {
 });
 
 test('create_task creates a task with defaults in an own project', function () {
-    mcpAs($this->user)->tool(CreateTaskTool::class, ['project_id' => $this->project->id, 'title' => 'Draft the post'])
+    callMcpTool($this->user, CreateTaskTool::class, ['project_id' => $this->project->id, 'title' => 'Draft the post'])
         ->assertOk()
-        ->assertStructuredContent(fn ($json) => $json
-            ->where('task.title', 'Draft the post')
-            ->where('task.status', 'todo')
-            ->where('task.priority', 'medium')
-            ->where('task.project_id', $this->project->id)
-            ->etc());
+        ->assertSee('Draft the post');
+
+    $task = Task::where('title', 'Draft the post')->sole();
+
+    expect($task->status->value)->toBe('todo')
+        ->and($task->priority->value)->toBe('medium')
+        ->and($task->project_id)->toBe($this->project->id);
 });
 
 test('create_task accepts every task field', function () {
-    mcpAs($this->user)->tool(CreateTaskTool::class, [
+    callMcpTool($this->user, CreateTaskTool::class, [
         'project_id' => $this->project->id,
         'title' => 'Ship it',
         'description' => 'Final step',
@@ -216,7 +210,7 @@ test('create_task accepts every task field', function () {
 });
 
 test('create_task cannot add a task to another workspaces project', function () {
-    mcpAs($this->user)->tool(CreateTaskTool::class, ['project_id' => $this->otherProject->id, 'title' => 'Sneaky'])
+    callMcpTool($this->user, CreateTaskTool::class, ['project_id' => $this->otherProject->id, 'title' => 'Sneaky'])
         ->assertHasErrors(['Project not found.']);
 
     expect(Task::where('title', 'Sneaky')->exists())->toBeFalse();
@@ -225,10 +219,10 @@ test('create_task cannot add a task to another workspaces project', function () 
 test('create_task validates its input', function () {
     $arguments = ['project_id' => $this->project->id];
 
-    mcpAs($this->user)->tool(CreateTaskTool::class, $arguments)->assertHasErrors(['title']);
-    mcpAs($this->user)->tool(CreateTaskTool::class, [...$arguments, 'title' => 'x', 'status' => 'archived'])->assertHasErrors();
-    mcpAs($this->user)->tool(CreateTaskTool::class, [...$arguments, 'title' => 'x', 'priority' => 'urgent'])->assertHasErrors();
-    mcpAs($this->user)->tool(CreateTaskTool::class, [...$arguments, 'title' => 'x', 'due_date' => 'tomorrow-ish'])->assertHasErrors();
+    callMcpTool($this->user, CreateTaskTool::class, $arguments)->assertHasErrors(['title']);
+    callMcpTool($this->user, CreateTaskTool::class, [...$arguments, 'title' => 'x', 'status' => 'archived'])->assertHasErrors();
+    callMcpTool($this->user, CreateTaskTool::class, [...$arguments, 'title' => 'x', 'priority' => 'urgent'])->assertHasErrors();
+    callMcpTool($this->user, CreateTaskTool::class, [...$arguments, 'title' => 'x', 'due_date' => 'tomorrow-ish'])->assertHasErrors();
 
     expect($this->project->tasks()->count())->toBe(1);
 });
@@ -237,15 +231,15 @@ test('create_task enforces the workspace task limit across projects', function (
     config()->set('tasknet.limits.tasks', 2);
     $secondProject = Project::factory()->for($this->user)->create();
 
-    mcpAs($this->user)->tool(CreateTaskTool::class, ['project_id' => $secondProject->id, 'title' => 'Second'])->assertOk();
-    mcpAs($this->user)->tool(CreateTaskTool::class, ['project_id' => $this->project->id, 'title' => 'Third'])
+    callMcpTool($this->user, CreateTaskTool::class, ['project_id' => $secondProject->id, 'title' => 'Second'])->assertOk();
+    callMcpTool($this->user, CreateTaskTool::class, ['project_id' => $this->project->id, 'title' => 'Third'])
         ->assertHasErrors(['You can create up to 2 tasks in a demo workspace.']);
 
     expect($this->user->tasks()->count())->toBe(2);
 });
 
 test('update_task changes only the supplied fields', function () {
-    mcpAs($this->user)->tool(UpdateTaskTool::class, [
+    callMcpTool($this->user, UpdateTaskTool::class, [
         'project_id' => $this->project->id,
         'task_id' => $this->task->id,
         'status' => 'completed',
@@ -259,20 +253,20 @@ test('update_task changes only the supplied fields', function () {
 test('update_task rejects an invalid status and an empty title', function () {
     $arguments = ['project_id' => $this->project->id, 'task_id' => $this->task->id];
 
-    mcpAs($this->user)->tool(UpdateTaskTool::class, [...$arguments, 'status' => 'archived'])->assertHasErrors();
-    mcpAs($this->user)->tool(UpdateTaskTool::class, [...$arguments, 'title' => ''])->assertHasErrors();
+    callMcpTool($this->user, UpdateTaskTool::class, [...$arguments, 'status' => 'archived'])->assertHasErrors();
+    callMcpTool($this->user, UpdateTaskTool::class, [...$arguments, 'title' => ''])->assertHasErrors();
 
     expect($this->task->fresh()->title)->toBe('Write the announcement');
 });
 
 test('update_task cannot modify another workspaces task', function () {
-    mcpAs($this->user)->tool(UpdateTaskTool::class, [
+    callMcpTool($this->user, UpdateTaskTool::class, [
         'project_id' => $this->otherProject->id,
         'task_id' => $this->otherTask->id,
         'title' => 'Hijacked',
     ])->assertHasErrors(['Project not found.']);
 
-    mcpAs($this->user)->tool(UpdateTaskTool::class, [
+    callMcpTool($this->user, UpdateTaskTool::class, [
         'project_id' => $this->project->id,
         'task_id' => $this->otherTask->id,
         'title' => 'Hijacked',
@@ -282,7 +276,7 @@ test('update_task cannot modify another workspaces task', function () {
 });
 
 test('update_task cannot move a task to another project', function () {
-    mcpAs($this->user)->tool(UpdateTaskTool::class, [
+    callMcpTool($this->user, UpdateTaskTool::class, [
         'project_id' => $this->project->id,
         'task_id' => $this->task->id,
         'title' => 'Stays put',
@@ -303,7 +297,7 @@ test('expired demo workspaces are denied by every tool', function (string $tool,
         default => $value,
     }, $arguments);
 
-    mcpAs($expired)->tool($tool, $arguments)->assertHasErrors();
+    callMcpTool($expired, $tool, $arguments)->assertHasErrors();
 
     expect($expired->projects()->count())->toBe(1)
         ->and($expired->tasks()->count())->toBe(1)
