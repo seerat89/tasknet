@@ -7,8 +7,8 @@ use Illuminate\Session\DatabaseSessionHandler;
 /**
  * Laravel's database session handler, minus the raw IP address and User-Agent.
  *
- * TaskNet has no use for this data, so the ip_address and user_agent columns are
- * left in place (they are nullable framework columns) but never written.
+ * TaskNet intentionally omits Laravel's default IP address and User-Agent session metadata;
+ * the sessions table has no columns for them.
  */
 class PrivacyDatabaseSessionHandler extends DatabaseSessionHandler
 {

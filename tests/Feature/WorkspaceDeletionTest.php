@@ -30,8 +30,6 @@ function populateWorkspace(User $user): void
         DB::table('sessions')->insert([
             'id' => Str::random(40),
             'user_id' => $user->id,
-            'ip_address' => '127.0.0.1',
-            'user_agent' => 'Test browser',
             'payload' => '',
             'last_activity' => time(),
         ]);

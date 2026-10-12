@@ -58,6 +58,8 @@ DBeaver, pgAdmin and similar tools can connect with:
 
 The `.env` file holds a local-only development password. Never reuse it elsewhere or commit `.env`.
 
+TaskNet intentionally does not persist IP addresses or User-Agent strings in application session records.
+
 ## Everyday commands
 
 ```bash
