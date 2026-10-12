@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthorizedMcpClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemoCredentialsController;
 use App\Http\Controllers\DemoWorkspaceController;
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::get('/settings', [WorkspaceController::class, 'show'])->name('settings');
+    Route::delete('/settings/mcp-clients/{client}', [AuthorizedMcpClientController::class, 'destroy'])->name('settings.clients.destroy');
     Route::delete('/settings/workspace', [WorkspaceController::class, 'destroy'])->name('workspace.destroy');
 
     Route::resource('projects', ProjectController::class)->except('index');

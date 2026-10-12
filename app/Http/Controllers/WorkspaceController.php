@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\DeleteDemoWorkspace;
+use App\Actions\ListAuthorizedMcpClients;
 use App\Http\Requests\DeleteWorkspaceRequest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -14,9 +15,12 @@ class WorkspaceController extends Controller
     /**
      * Show the workspace settings.
      */
-    public function show(Request $request): View
+    public function show(Request $request, ListAuthorizedMcpClients $authorizedClients): View
     {
-        return view('workspace.settings', ['user' => $request->user()]);
+        return view('workspace.settings', [
+            'user' => $request->user(),
+            'clients' => $authorizedClients->get($request->user()),
+        ]);
     }
 
     /**

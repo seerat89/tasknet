@@ -9,4 +9,6 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('tasknet:cleanup-demos')->daily();
-Schedule::command('passport:purge')->daily();
+// Keep expired access tokens until the refresh tokens that belong to them have expired too,
+// so a still-valid refresh token can always be traced back to its user and client.
+Schedule::command('passport:purge', ['--hours' => config('tasknet.demo.lifetime_days') * 24])->daily();

@@ -77,40 +77,63 @@ function authorizeUrl(Client $client, string $verifier = 'verifier'): string
 }
 
 /**
- * Run the real OAuth authorization-code flow for a user and return the issued access and refresh tokens.
- *
- * @return array{access_token: string, refresh_token: string, client_id: string}
+ * Sign the user in, approve the consent screen for a client and return the authorization code.
  */
-function issueOAuthTokens(User $user): array
+function requestAuthorizationCode(User $user, Client $client, string $verifier): string
 {
-    $client = registerTestClient();
-    $verifier = Str::random(64);
+    $screen = test()->actingAs($user)->get(authorizeUrl($client, $verifier));
 
-    $screen = test()->actingAs($user)->get(authorizeUrl($client, $verifier))->assertOk();
-    preg_match('/name="auth_token" value="([^"]+)"/', $screen->getContent(), $matches);
+    // Passport skips the consent screen for a client the user has already authorized.
+    if ($screen->isRedirect()) {
+        parse_str(parse_url($screen->headers->get('Location'), PHP_URL_QUERY), $query);
+    } else {
+        $screen->assertOk();
+        preg_match('/name="auth_token" value="([^"]+)"/', $screen->getContent(), $matches);
 
-    $approval = test()->post(route('passport.authorizations.approve'), [
-        'state' => 'xyz',
-        'client_id' => $client->getKey(),
-        'auth_token' => $matches[1],
-    ]);
+        $approval = test()->post(route('passport.authorizations.approve'), [
+            'state' => 'xyz',
+            'client_id' => $client->getKey(),
+            'auth_token' => $matches[1],
+        ]);
 
-    parse_str(parse_url($approval->headers->get('Location'), PHP_URL_QUERY), $query);
-
-    // Passport's controller keeps its guard instance, so clear the user rather than replacing the guard.
-    auth()->guard('web')->forgetUser();
-
-    $token = test()->postJson('/oauth/token', [
-        'grant_type' => 'authorization_code',
-        'client_id' => $client->getKey(),
-        'redirect_uri' => 'http://localhost:7777/callback',
-        'code' => $query['code'],
-        'code_verifier' => $verifier,
-    ])->assertOk()->json();
+        parse_str(parse_url($approval->headers->get('Location'), PHP_URL_QUERY), $query);
+    }
 
     // Passport's controller keeps its guard instance, so clear the user rather than replacing the guard.
     auth()->guard('web')->forgetUser();
     test()->flushSession();
+
+    return $query['code'];
+}
+
+/**
+ * Exchange an authorization code for tokens at the token endpoint.
+ */
+function exchangeAuthorizationCode(Client $client, string $code, string $verifier): TestResponse
+{
+    return test()->postJson('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $client->getKey(),
+        'redirect_uri' => 'http://localhost:7777/callback',
+        'code' => $code,
+        'code_verifier' => $verifier,
+    ]);
+}
+
+/**
+ * Run the real OAuth authorization-code flow for a user and return the issued access and refresh tokens.
+ *
+ * Pass an existing client to authorize it again, or to let another workspace authorize the same client.
+ *
+ * @return array{access_token: string, refresh_token: string, client_id: string}
+ */
+function issueOAuthTokens(User $user, ?Client $client = null): array
+{
+    $client ??= registerTestClient();
+    $verifier = Str::random(64);
+
+    $code = requestAuthorizationCode($user, $client, $verifier);
+    $token = exchangeAuthorizationCode($client, $code, $verifier)->assertOk()->json();
 
     return ['access_token' => $token['access_token'], 'refresh_token' => $token['refresh_token'], 'client_id' => (string) $client->getKey()];
 }

@@ -19,6 +19,38 @@
             </dl>
         </section>
 
+        <section aria-labelledby="clients-heading" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+                <h2 id="clients-heading" class="text-xl font-semibold tracking-tight text-stone-900">Authorized MCP clients</h2>
+                <p class="leading-7 text-stone-700">Clients you’ve approved to access this workspace through MCP.</p>
+            </div>
+
+            @if ($clients->isEmpty())
+                <div class="flex flex-col gap-1 rounded-lg border border-stone-200 bg-white p-5">
+                    <p class="font-medium text-stone-900">No MCP clients are currently authorized.</p>
+                    <p class="text-sm leading-6 text-stone-600">Connect a compatible MCP client and approve access to see it here.</p>
+                </div>
+            @else
+                <ul class="flex flex-col divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white">
+                    @foreach ($clients as $client)
+                        @php($clientName = filled($client->name) ? $client->name : 'MCP client')
+                        <li class="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                            <p class="font-semibold break-words text-stone-900">{{ $clientName }}</p>
+
+                            <x-confirm-delete
+                                :name="'revoke-'.$client->getKey()"
+                                :heading="'Revoke access for '.$clientName.'?'"
+                                message="This client will no longer be able to access this workspace. You can authorize it again later."
+                                :action="route('settings.clients.destroy', $client->getKey())"
+                                label="Revoke access"
+                                class="w-fit"
+                            />
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </section>
+
         <section aria-labelledby="danger-heading" class="flex flex-col gap-4 rounded-lg border border-red-200 bg-red-50/50 p-5">
             <div class="flex flex-col gap-1">
                 <h2 id="danger-heading" class="text-xl font-semibold tracking-tight text-red-900">Danger zone</h2>
