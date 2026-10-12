@@ -6,12 +6,15 @@ use App\Mcp\Tools\CreateTaskTool;
 use App\Mcp\Tools\UpdateProjectTool;
 use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\User;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Laravel\Mcp\Server\Tool;
 use Laravel\Mcp\Server\Tools\ToolSearch;
+use Laravel\Passport\Client;
+use Laravel\Passport\Passport;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Tests\TestCase;
 
@@ -29,6 +32,88 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
  // ->use(RefreshDatabase::class)
     ->in('Feature');
+
+pest()->afterEach(function () {
+    Passport::$keyPath = null;
+
+    if (isset($this->keyPath)) {
+        File::deleteDirectory($this->keyPath);
+    }
+})->in('Feature');
+
+/**
+ * Use throwaway OAuth keys so tests do not depend on files in storage/.
+ */
+function useTemporaryPassportKeys(): void
+{
+    $path = test()->keyPath = sys_get_temp_dir().'/tasknet-passport-'.Str::random(12);
+    File::ensureDirectoryExists($path);
+
+    Passport::loadKeysFrom($path);
+    test()->artisan('passport:keys', ['--length' => 2048])->assertSuccessful();
+}
+
+function registerTestClient(): Client
+{
+    $response = test()->postJson('/oauth/register', [
+        'client_name' => 'Test Agent',
+        'redirect_uris' => ['http://localhost:7777/callback'],
+    ])->assertCreated();
+
+    return Client::query()->findOrFail($response->json('client_id'));
+}
+
+function authorizeUrl(Client $client, string $verifier = 'verifier'): string
+{
+    return route('passport.authorizations.authorize', [
+        'client_id' => $client->getKey(),
+        'redirect_uri' => 'http://localhost:7777/callback',
+        'response_type' => 'code',
+        'scope' => 'mcp:use',
+        'state' => 'xyz',
+        'code_challenge' => rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '='),
+        'code_challenge_method' => 'S256',
+    ]);
+}
+
+/**
+ * Run the real OAuth authorization-code flow for a user and return the issued access and refresh tokens.
+ *
+ * @return array{access_token: string, refresh_token: string, client_id: string}
+ */
+function issueOAuthTokens(User $user): array
+{
+    $client = registerTestClient();
+    $verifier = Str::random(64);
+
+    $screen = test()->actingAs($user)->get(authorizeUrl($client, $verifier))->assertOk();
+    preg_match('/name="auth_token" value="([^"]+)"/', $screen->getContent(), $matches);
+
+    $approval = test()->post(route('passport.authorizations.approve'), [
+        'state' => 'xyz',
+        'client_id' => $client->getKey(),
+        'auth_token' => $matches[1],
+    ]);
+
+    parse_str(parse_url($approval->headers->get('Location'), PHP_URL_QUERY), $query);
+
+    // Passport's controller keeps its guard instance, so clear the user rather than replacing the guard.
+    auth()->guard('web')->forgetUser();
+
+    $token = test()->postJson('/oauth/token', [
+        'grant_type' => 'authorization_code',
+        'client_id' => $client->getKey(),
+        'redirect_uri' => 'http://localhost:7777/callback',
+        'code' => $query['code'],
+        'code_verifier' => $verifier,
+    ])->assertOk()->json();
+
+    // Passport's controller keeps its guard instance, so clear the user rather than replacing the guard.
+    auth()->guard('web')->forgetUser();
+    test()->flushSession();
+
+    return ['access_token' => $token['access_token'], 'refresh_token' => $token['refresh_token'], 'client_id' => (string) $client->getKey()];
+}
 
 /**
  * Send a JSON-RPC request to the MCP endpoint over HTTP.

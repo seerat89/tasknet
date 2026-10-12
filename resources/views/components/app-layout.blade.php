@@ -19,6 +19,7 @@
     $navigation = [
         ...($user ? [['label' => 'Projects', 'href' => route('dashboard'), 'active' => request()->routeIs('dashboard', 'projects.*')]] : []),
         ['label' => 'About', 'href' => route('about'), 'active' => request()->routeIs('about')],
+        ...($user ? [['label' => 'Settings', 'href' => route('settings'), 'active' => request()->routeIs('settings')]] : []),
     ];
 
     $focus = 'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600';

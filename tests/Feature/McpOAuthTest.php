@@ -3,7 +3,6 @@
 use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
@@ -18,26 +17,6 @@ beforeEach(function () {
     $this->project = Project::factory()->for($this->user)->create(['name' => 'Launch plan']);
     Project::factory()->for($this->otherUser)->create(['name' => 'Secret roadmap']);
 });
-
-afterEach(function () {
-    Passport::$keyPath = null;
-
-    if (isset($this->keyPath)) {
-        File::deleteDirectory($this->keyPath);
-    }
-});
-
-/**
- * Use throwaway OAuth keys so tests do not depend on files in storage/.
- */
-function useTemporaryPassportKeys(): void
-{
-    $path = test()->keyPath = sys_get_temp_dir().'/tasknet-passport-'.Str::random(12);
-    File::ensureDirectoryExists($path);
-
-    Passport::loadKeysFrom($path);
-    test()->artisan('passport:keys', ['--length' => 2048])->assertSuccessful();
-}
 
 test('unauthenticated requests to the MCP endpoint are rejected', function () {
     mcpRequest($this, 'tools/list')
@@ -233,26 +212,3 @@ test('the full OAuth flow issues a token that works only for the approving user'
         ->postJson('/mcp', ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'])
         ->assertForbidden();
 });
-
-function registerTestClient(): Client
-{
-    $response = test()->postJson('/oauth/register', [
-        'client_name' => 'Test Agent',
-        'redirect_uris' => ['http://localhost:7777/callback'],
-    ])->assertCreated();
-
-    return Client::query()->findOrFail($response->json('client_id'));
-}
-
-function authorizeUrl(Client $client, string $verifier = 'verifier'): string
-{
-    return route('passport.authorizations.authorize', [
-        'client_id' => $client->getKey(),
-        'redirect_uri' => 'http://localhost:7777/callback',
-        'response_type' => 'code',
-        'scope' => 'mcp:use',
-        'state' => 'xyz',
-        'code_challenge' => rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '='),
-        'code_challenge_method' => 'S256',
-    ]);
-}
