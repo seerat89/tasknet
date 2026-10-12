@@ -4,5 +4,5 @@
     @if ($heading)
         <p class="font-semibold">{{ $heading }}</p>
     @endif
-    <p>TaskNet is a public MCP testing environment. Do not use it for real projects, confidential information, personal data, or anything you need to keep. This workspace and its data are automatically deleted after {{ config('tasknet.demo.lifetime_days') }} days.</p>
+    <p>TaskNet is a demonstration service. Do not use it for sensitive, confidential or important information. A workspace and its data are deleted automatically {{ config('tasknet.demo.lifetime_days') }} days after it is created.</p>
 </div>

@@ -3,6 +3,8 @@
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 uses(LazilyRefreshDatabase::class);
 
@@ -14,33 +16,86 @@ beforeEach(function () {
     $this->password = Crypt::decryptString(session('demo_credentials.password'));
 });
 
-test('the credential page shows the Demo ID, password, expiry and warnings', function () {
+test('demo creation signs the new user in', function () {
+    $this->assertAuthenticatedAs($this->user);
+    expect($this->user->is_demo)->toBeTrue();
+});
+
+test('the credential page shows the Demo ID, password and expiry once', function () {
     $response = $this->get(route('demo.credentials'));
-    $expiry = $this->user->expires_at->utc()->format('F j, Y \a\t H:i').' UTC';
 
     $response->assertOk()
         ->assertSeeText([
             'Your demo workspace is ready',
+            'You’re signed in now. Save these login details so you can return after signing out or from another browser.',
+            'Save your password now. It cannot be recovered.',
+            'TaskNet stores only a hash of your password and has no password reset.',
+            'This is the only time it is shown.',
+            'you will not be able to sign in again after your current session ends',
             $this->user->demo_id,
             $this->password,
-            $this->user->expires_at->utc()->format('F j, Y \a\t H:i').' UTC',
-            'Save these credentials now. TaskNet stores only a password hash, so your current password cannot be shown or recovered later.',
             'Workspace expires',
-            'Temporary demo workspace',
-            'TaskNet is for testing MCP connections only. Do not store real projects, confidential information, personal data, or anything important here.',
-            'All workspace data will be permanently deleted after 30 days.',
-            'I have saved my login credentials and understand that this workspace and all of its data will be permanently deleted on '.$expiry.'.',
-            'Copy credentials',
-            'Download login details',
-            'Continue',
+            $this->user->expires_at->utc()->format('F j, Y \a\t H:i').' UTC',
+            'TaskNet is a demonstration service.',
+            'deleted automatically 30 days after you create it',
         ])
+        ->assertDontSeeText(['public MCP testing environment', 'permanently deleted on']);
+});
+
+test('copying and downloading stay available but optional', function () {
+    $this->get(route('demo.credentials'))
+        ->assertSeeText(['Copy credentials', 'Download login details'])
+        ->assertSee('data-copy-text=', false)
+        ->assertSee('href="'.route('demo.credentials.download').'"', false)
+        ->assertSee('id="save-status"', false);
+});
+
+test('continuing needs no checkbox and is never disabled', function () {
+    $response = $this->get(route('demo.credentials'));
+
+    $response->assertSeeText('Continue to workspace')
         ->assertSee('action="'.route('demo.credentials.continue').'"', false)
-        ->assertSeeInOrder(['id="acknowledge"', 'type="checkbox"', 'disabled'], false)
-        ->assertSeeInOrder(['id="continue-button"', 'disabled'], false)
-        ->assertSee('id="save-status"', false)
-        ->assertSee('role="status"', false)
-        ->assertSee('for="acknowledge"', false)
-        ->assertSee('href="'.route('demo.credentials.download').'"', false);
+        ->assertDontSee('type="checkbox"', false)
+        ->assertDontSee('data-acknowledge', false)
+        ->assertDontSee('id="acknowledge"', false)
+        ->assertDontSeeText(['Save your credentials', 'Confirm and continue', 'to enable this step']);
+
+    expect($response->getContent())->not->toMatch('/<button[^>]*\sdisabled[\s>=]/');
+});
+
+test('continuing without saving anything opens the dashboard', function () {
+    $this->post(route('demo.credentials.continue'))->assertRedirect(route('dashboard'));
+
+    $this->get(route('dashboard'))->assertOk();
+    $this->assertAuthenticatedAs($this->user);
+});
+
+test('the credentials page uses the normal signed-in navigation', function () {
+    $this->get(route('demo.credentials'))
+        ->assertSeeInOrder(['Projects', 'About', 'Log out'])
+        ->assertSee($this->user->demo_id);
+});
+
+test('the password is never stored in plaintext', function () {
+    expect($this->user->fresh()->password)->not->toBe($this->password)
+        ->and(Hash::check($this->password, $this->user->fresh()->password))->toBeTrue()
+        ->and(DB::table('users')->where('id', $this->user->id)->value('password'))->not->toContain($this->password);
+});
+
+test('leaving the credentials screen discards the plaintext credentials', function () {
+    $this->get(route('about'))->assertOk();
+
+    expect(session()->has('demo_credentials'))->toBeFalse();
+
+    $this->get(route('demo.credentials'))->assertRedirect(route('dashboard'));
+    $this->get(route('demo.credentials.download'))->assertRedirect(route('dashboard'));
+});
+
+test('the credential screen can be refreshed until the user leaves it', function () {
+    $this->get(route('demo.credentials'))->assertOk()->assertSeeText($this->password);
+    $this->get(route('demo.credentials'))->assertOk()->assertSeeText($this->password);
+
+    expect(User::count())->toBe(1);
 });
 
 test('the credential page is not cacheable', function () {

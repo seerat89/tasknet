@@ -22,7 +22,7 @@ test('guests can open the branded demo login form', function () {
         ->assertSee('name="remember"', false)
         ->assertDontSee('name="email"', false)
         ->assertDontSeeText(['Email', 'Forgot password', 'Create an account'])
-        ->assertSeeText('public MCP testing environment');
+        ->assertSeeText('demonstration service');
 });
 
 test('returning demo users can log in with their Demo ID and password', function () {
