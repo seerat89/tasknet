@@ -1,3 +1,4 @@
+import './menu';
 import './realtime';
 
 let credentialsSaved = false;

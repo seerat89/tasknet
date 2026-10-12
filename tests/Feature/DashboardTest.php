@@ -79,7 +79,7 @@ test('the dashboard indicates the project limit when it is reached', function ()
 test('the header shows the Demo ID and remaining days but never the synthetic email', function () {
     $response = $this->actingAs($this->user)->get(route('dashboard'));
 
-    $response->assertSeeText([$this->user->demo_id, 'Workspace will be deleted in 30 days', 'Log out'])
+    $response->assertSeeText([$this->user->demo_id, '30 days left', 'Log out'])
         ->assertDontSee($this->user->email)
         ->assertDontSee('@tasknet.local')
         ->assertSee('href="'.route('dashboard').'"', false);
@@ -92,9 +92,9 @@ test('remaining days are rounded up and pluralized correctly', function (int $ho
     $this->actingAs($user)->get(route('dashboard'))->assertSeeText($label);
 })->with([
     'a few hours left' => [5, 'Expires today'],
-    'exactly one day' => [24, 'Workspace will be deleted in 1 day'],
-    'just over one day' => [25, 'Workspace will be deleted in 2 days'],
-    'two days' => [48, 'Workspace will be deleted in 2 days'],
+    'exactly one day' => [24, '1 day left'],
+    'just over one day' => [25, '2 days left'],
+    'two days' => [48, '2 days left'],
 ]);
 
 test('login redirects to the dashboard', function () {
@@ -112,7 +112,7 @@ test('continuing from the credentials page redirects to the dashboard', function
 
 test('the homepage links authenticated users to the dashboard', function () {
     $this->actingAs($this->user)->get(route('home'))
-        ->assertSeeText(['Dashboard', 'Open dashboard'])
+        ->assertSeeText(['Projects', 'Open dashboard'])
         ->assertSee('href="'.route('dashboard').'"', false);
 });
 
@@ -122,15 +122,15 @@ test('the header colors only the remaining time according to urgency', function 
 
     $this->actingAs($user)->get(route('dashboard'))
         ->assertSee('<span class="'.$classes.'">'.$label.'</span>', false)
-        ->assertSee('<span class="font-medium text-stone-700">'.$user->demo_id.'</span>', false)
+        ->assertSee('<span class="font-semibold text-stone-700">'.$user->demo_id.'</span>', false)
         ->assertSee('<span aria-hidden="true">·</span>', false);
 })->with([
-    '30 days' => [fn () => now()->addDays(30), 'Workspace will be deleted in 30 days', 'text-teal-700'],
-    '8 days' => [fn () => now()->addDays(8), 'Workspace will be deleted in 8 days', 'text-teal-700'],
-    '7 days' => [fn () => now()->addDays(7), 'Workspace will be deleted in 7 days', 'text-amber-700'],
-    '4 days' => [fn () => now()->addDays(4), 'Workspace will be deleted in 4 days', 'text-amber-700'],
-    '3 days' => [fn () => now()->addDays(3), 'Workspace will be deleted in 3 days', 'text-red-700'],
-    '1 day' => [fn () => now()->addDay(), 'Workspace will be deleted in 1 day', 'text-red-700'],
+    '30 days' => [fn () => now()->addDays(30), '30 days left', 'text-teal-700'],
+    '8 days' => [fn () => now()->addDays(8), '8 days left', 'text-teal-700'],
+    '7 days' => [fn () => now()->addDays(7), '7 days left', 'text-amber-700'],
+    '4 days' => [fn () => now()->addDays(4), '4 days left', 'text-amber-700'],
+    '3 days' => [fn () => now()->addDays(3), '3 days left', 'text-red-700'],
+    '1 day' => [fn () => now()->addDay(), '1 day left', 'text-red-700'],
     'expires today' => [fn () => now()->addHours(3), 'Expires today', 'font-semibold text-red-700'],
 ]);
 

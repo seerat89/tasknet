@@ -20,7 +20,7 @@
             <dd class="font-medium">{{ $taskCount }} / {{ $taskLimit }}</dd>
         </div>
         <div class="flex gap-2">
-            <dt class="text-stone-500">Completed</dt>
+            <dt class="text-stone-500">Completed tasks</dt>
             <dd class="font-medium">{{ $completedTaskCount }}</dd>
         </div>
     </dl>

@@ -11,7 +11,7 @@
         <a href="{{ route('login') }}" @class([
             'rounded-sm text-sm font-medium text-stone-600 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600',
             'order-2' => $primaryFirst,
-        ])>Log in</a>
+        ])>Sign in</a>
         <form method="POST" action="{{ route('demo.store') }}" @class(['order-1' => $primaryFirst])>
             @csrf
             <button type="submit" @class([

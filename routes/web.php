@@ -11,6 +11,10 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::view('/about', 'about')->name('about');
+Route::view('/privacy', 'privacy')->name('privacy');
+Route::view('/terms', 'terms')->name('terms');
+
 Route::post('/demo', [DemoWorkspaceController::class, 'store'])
     ->middleware(['guest', 'throttle:demo-workspaces'])
     ->name('demo.store');

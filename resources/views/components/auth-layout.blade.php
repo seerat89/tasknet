@@ -12,17 +12,17 @@
     <body class="min-h-screen bg-stone-50 font-sans text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100">
         <main class="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-12 sm:px-6">
             <header class="flex flex-col items-center gap-2 text-center">
-                <a href="{{ route('home') }}" class="flex items-center gap-3 rounded-lg text-2xl font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">
-                    <span class="flex size-10 items-center justify-center rounded-xl bg-teal-700 text-white" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m5 12 4 4L19 6" />
-                            <path d="M19 13v6H5V5h8" />
-                        </svg>
-                    </span>
-                    TaskNet
+                <a href="{{ route('home') }}" aria-label="TaskNet home" class="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">
+                    <img src="{{ asset('brand/tasknet-logo-color.svg') }}" alt="TaskNet" width="1500" height="420" class="h-auto w-40">
                 </a>
                 <p class="text-sm text-stone-500 dark:text-stone-400">Taskboard for AI Agents</p>
             </header>
+
+            <nav aria-label="Site" class="flex items-center gap-6 text-sm text-stone-500 dark:text-stone-400">
+                <a href="{{ route('home') }}" class="rounded-sm underline decoration-stone-300 underline-offset-4 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:hover:text-teal-400">Home</a>
+                <a href="{{ route('about') }}" class="rounded-sm underline decoration-stone-300 underline-offset-4 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:hover:text-teal-400">About</a>
+                <a href="{{ route('privacy') }}" class="rounded-sm underline decoration-stone-300 underline-offset-4 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:hover:text-teal-400">Privacy</a>
+            </nav>
 
             <section aria-labelledby="auth-title" class="flex w-full max-w-md flex-col gap-6 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8 dark:border-stone-800 dark:bg-stone-900">
                 <div class="flex flex-col gap-2">

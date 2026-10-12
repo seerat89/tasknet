@@ -119,6 +119,56 @@ The official [MCP Inspector](https://github.com/modelcontextprotocol/inspector) 
 
 The Inspector validates exactly what a real AI client sees: the OAuth handshake, the MCP connection, discovery, input schemas and tool results.
 
+### Testing with remote AI clients (tunnels)
+
+Tools that run on your machine, such as the MCP Inspector, can use `http://localhost:8000/mcp` directly. Browser-based and cloud AI clients cannot reach `localhost`, so to try one of them against a local TaskNet you need a public HTTPS address that forwards to your machine. A tunnel such as [ngrok](https://ngrok.com/) or [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) provides one. Either works; TaskNet does not depend on a particular provider.
+
+1. **Start TaskNet and a tunnel.** Run `docker compose up -d`, then forward port 8000, for example:
+
+   ```bash
+   ngrok http 8000
+   # or
+   cloudflared tunnel --url http://localhost:8000
+   ```
+
+   The tool prints an `https://` address. The steps below call it `https://example.tunnel`.
+
+2. **Point TaskNet at it.** In `.env` set `APP_URL=https://example.tunnel`, then `docker compose restart app`. OAuth discovery and redirect URLs are built from `APP_URL`.
+
+3. **Allow the client's callback.** Dynamic client registration only accepts redirect URIs on origins listed in `MCP_REDIRECT_DOMAINS` (loopback addresses are always accepted while `http://localhost` is listed). Add the callback origin documented by the client you are testing, for example:
+
+   ```dotenv
+   MCP_REDIRECT_DOMAINS=http://localhost,http://127.0.0.1,https://client.example.com
+   ```
+
+   Restart the app afterwards. Clients that use a custom URL scheme need that scheme added to `custom_schemes` in `config/mcp.php`.
+
+4. **Check the endpoint.**
+
+   ```bash
+   curl -i https://example.tunnel/mcp
+   curl https://example.tunnel/.well-known/oauth-authorization-server
+   ```
+
+   The first should return `401` with a `WWW-Authenticate` header. The second should return JSON whose URLs all start with `https://`.
+
+5. **Connect the client.** Use `https://example.tunnel/mcp` as the MCP server URL. When the client sends you to TaskNet, sign in with a demo workspace's Demo ID and approve the connection.
+
+Keep the dashboard open on `http://localhost:8000` to watch realtime updates; the browser reaches Reverb on `localhost:8080`, which a tunnel does not forward.
+
+Troubleshooting:
+
+- `invalid_redirect_uri` when the client registers: its callback origin is not in `MCP_REDIRECT_DOMAINS` (step 3).
+- `http://` URLs in the OAuth metadata: TaskNet does not configure trusted proxies yet, so behind a tunnel it may not detect HTTPS. Check the metadata from step 4 before blaming the client.
+- `429`: the per-workspace MCP rate limit (`MCP_RATE_LIMIT`) was reached.
+- `403` on `/mcp`: the demo workspace has expired or the token lacks the `mcp:use` scope.
+
+Notes:
+
+- Tunnels are for development and testing, not for hosting TaskNet. Stop the tunnel when you are done and set `APP_URL` back to `http://localhost:8000`.
+- Anyone with the tunnel address can reach your local instance, and the development `.env` has `APP_DEBUG=true`. Set it to `false` while a tunnel is open and only use throwaway demo data.
+- Client support for custom MCP servers differs by product and plan; check the client's own documentation.
+
 ## Realtime updates
 
 Open dashboard and project pages update themselves when a project or task changes, whether the change came from the web UI, an MCP client or the Inspector. There is no polling.

@@ -51,9 +51,20 @@ test('look-alike hosts of a configured domain are rejected', function () {
 test('the wildcard is no longer part of the redirect configuration', function () {
     expect(config('mcp.redirect_domains'))->not->toContain('*');
 
-    putenv('MCP_REDIRECT_DOMAINS=*,https://client.example.com');
-    $domains = (require config_path('mcp.php'))['redirect_domains'];
-    putenv('MCP_REDIRECT_DOMAINS');
+    $previous = [getenv('MCP_REDIRECT_DOMAINS'), $_ENV['MCP_REDIRECT_DOMAINS'] ?? null, $_SERVER['MCP_REDIRECT_DOMAINS'] ?? null];
+
+    // env() prefers values already loaded from .env, so override every source it reads.
+    $wildcard = '*,https://client.example.com';
+    putenv("MCP_REDIRECT_DOMAINS={$wildcard}");
+    $_ENV['MCP_REDIRECT_DOMAINS'] = $_SERVER['MCP_REDIRECT_DOMAINS'] = $wildcard;
+
+    try {
+        $domains = (require config_path('mcp.php'))['redirect_domains'];
+    } finally {
+        $previous[0] === false ? putenv('MCP_REDIRECT_DOMAINS') : putenv("MCP_REDIRECT_DOMAINS={$previous[0]}");
+        $previous[1] === null ? $_ENV = array_diff_key($_ENV, ['MCP_REDIRECT_DOMAINS' => 1]) : $_ENV['MCP_REDIRECT_DOMAINS'] = $previous[1];
+        $previous[2] === null ? $_SERVER = array_diff_key($_SERVER, ['MCP_REDIRECT_DOMAINS' => 1]) : $_SERVER['MCP_REDIRECT_DOMAINS'] = $previous[2];
+    }
 
     expect($domains)->toBe(['https://client.example.com']);
 });

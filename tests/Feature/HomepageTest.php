@@ -14,7 +14,9 @@ test('guests see the TaskNet homepage with demo calls to action', function () {
         'Test MCP.',
         'TaskNet is a temporary project and task sandbox for testing how AI agents interact with an application through MCP.',
         'Start demo',
-        'Log in',
+        'Sign in',
+        'About',
+        'Privacy',
     ])->assertSee('action="'.route('demo.store').'"', false)
         ->assertSee('href="'.route('login').'"', false)
         ->assertSee('src="'.asset('brand/tasknet-logo-color.svg').'"', false)
@@ -54,6 +56,6 @@ test('authenticated demo users see logout and no email verification actions', fu
         ->assertSee('name="_token"', false)
         ->assertDontSee('href="'.route('login').'"', false)
         ->assertDontSee('action="'.route('demo.store').'"', false)
-        ->assertDontSeeText(['Verify email', 'Start demo', 'Log in'])
+        ->assertDontSeeText(['Verify email', 'Start demo', 'Sign in'])
         ->assertDontSee('/email/verify', false);
 });

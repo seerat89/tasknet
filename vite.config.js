@@ -27,7 +27,18 @@ export default defineConfig({
             host: 'localhost',
         },
         watch: {
-            ignored: ['**/storage/framework/views/**'],
+            // Bind-mounted files on Windows/macOS do not emit change events inside Docker.
+            usePolling: true,
+            interval: 1000,
+            ignored: [
+                '**/vendor/**',
+                '**/node_modules/**',
+                '**/.git/**',
+                '**/storage/**',
+                '**/public/build/**',
+                '**/database/**',
+                '**/tests/**',
+            ],
         },
     },
 });
