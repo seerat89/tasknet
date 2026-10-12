@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Support\PrivacyDatabaseSessionHandler;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passport\Passport;
 
@@ -24,6 +26,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // The "database" session driver, without persisting the IP address or User-Agent.
+        // The "database" session driver, without persisting the IP address or User-Agent.
+        // The session manager wraps the returned handler in a session store itself.
+        Session::extend('database', function ($app) {
+            return new PrivacyDatabaseSessionHandler(
+                $app['db']->connection(config('session.connection')),
+                config('session.table'),
+                config('session.lifetime'),
+                $app,
+            );
+        });
+
         RateLimiter::for('demo-workspaces', function (Request $request) {
             return Limit::perHour(10)->by($request->ip());
         });
