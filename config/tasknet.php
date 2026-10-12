@@ -33,15 +33,32 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | MCP Rate Limit
+    | MCP
     |--------------------------------------------------------------------------
     |
-    | Maximum authenticated /mcp requests per minute for each workspace.
+    | requests_per_minute: maximum authenticated /mcp requests per minute for
+    | each workspace.
+    |
+    | oauth: lifetimes for the OAuth state external MCP clients rely on.
+    |  - access_token_days / refresh_token_days: how long issued tokens work.
+    |  - unused_client_days: how long a dynamically registered client must have
+    |    existed before tasknet:cleanup-oauth may remove it, and then only if
+    |    Passport no longer references it.
+    |
+    | Expired access-token rows are kept for the whole refresh-token lifetime
+    | (see tasknet:cleanup-oauth), so a refresh token can always be traced to
+    | its user and client.
     |
     */
 
     'mcp' => [
         'requests_per_minute' => (int) env('MCP_RATE_LIMIT', 120),
+
+        'oauth' => [
+            'access_token_days' => 1,
+            'refresh_token_days' => 30,
+            'unused_client_days' => 30,
+        ],
     ],
 
     /*

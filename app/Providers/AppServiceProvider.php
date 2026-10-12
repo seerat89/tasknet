@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Support\PrivacyDatabaseSessionHandler;
+use Carbon\CarbonInterval;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -70,7 +71,7 @@ class AppServiceProvider extends ServiceProvider
         ]);
         Passport::defaultScopes(['mcp:use']);
 
-        Passport::tokensExpireIn(now()->addDay());
-        Passport::refreshTokensExpireIn(now()->addDays(config('tasknet.demo.lifetime_days')));
+        Passport::tokensExpireIn(CarbonInterval::days(config('tasknet.mcp.oauth.access_token_days')));
+        Passport::refreshTokensExpireIn(CarbonInterval::days(config('tasknet.mcp.oauth.refresh_token_days')));
     }
 }

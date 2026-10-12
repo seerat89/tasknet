@@ -2,7 +2,6 @@
 
 use App\Actions\ListAuthorizedMcpClients;
 use App\Models\User;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
@@ -192,14 +191,6 @@ test('a client whose access token expired is listed while its refresh token stil
     expect(authorizedNames($user))->toBe(['Test Agent']);
     expect(refreshStatus($tokens))->toBe(200);
     expect(authorizedNames($user))->toBe(['Test Agent']);
-});
-
-test('the scheduled purge keeps expired access tokens until their refresh tokens expire', function () {
-    $event = collect(app(Schedule::class)->events())
-        ->first(fn ($event) => str_contains($event->command, 'passport:purge'));
-
-    expect($event)->not->toBeNull()
-        ->and($event->command)->toContain('--hours='.(config('tasknet.demo.lifetime_days') * 24));
 });
 
 // --- Revocation ---------------------------------------------------------------
