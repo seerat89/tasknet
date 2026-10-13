@@ -17,6 +17,10 @@ Route::view('/about', 'about')->name('about');
 Route::view('/privacy', 'privacy')->name('privacy');
 Route::view('/terms', 'terms')->name('terms');
 
+Route::get('/demo', [DemoWorkspaceController::class, 'create'])
+    ->middleware('guest')
+    ->name('demo.create');
+
 Route::post('/demo', [DemoWorkspaceController::class, 'store'])
     ->middleware(['guest', 'throttle:demo-workspaces'])
     ->name('demo.store');

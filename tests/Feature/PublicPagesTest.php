@@ -77,6 +77,8 @@ test('terms cover the essentials', function () {
         ->assertSee('deleted automatically 30 days after you create it')
         ->assertSee('delete a workspace yourself at any time')
         ->assertSee('provided as is')
+        ->assertSee('You decide which clients to connect. TaskNet limits connected clients to the workspace permissions and MCP tools provided by the service.')
+        ->assertDontSee('what they may access')
         ->assertSee('TaskNet cannot control how a provider handles information')
         ->assertSee('href="'.route('privacy').'"', false)
         ->assertDontSee('public demo')
@@ -101,24 +103,30 @@ test('about does not claim a production deployment', function () {
 test('privacy states only what is true', function () {
     $this->get(route('privacy'))
         ->assertOk()
-        ->assertSeeInOrder(['Information TaskNet stores', 'Cookies', 'Retention', 'External AI clients'])
+        ->assertSeeInOrder(['Information TaskNet stores', 'Cookies', 'Analytics', 'Retention', 'External AI clients'])
         ->assertSee('demonstration service')
         ->assertSee('sensitive, confidential or important information')
         ->assertSee('Demo ID')
-        ->assertSee('hash of your password')
-        ->assertSee('does not use analytics or advertising cookies')
-        ->assertSee('deleted automatically 30 days after you create it')
-        ->assertSee('delete your workspace yourself at any time')
+        ->assertSee('a hash of your password')
+        ->assertSee('It does not use advertising or analytics cookies')
+        ->assertSee('Vercel Web Analytics does not use analytics cookies')
+        ->assertSee('Technical request information may be processed briefly for security and rate limiting')
+        ->assertSee('Hosting and infrastructure providers, such as Vercel, may separately process technical request information')
+        ->assertDontSeeText('anonymous')
+        ->assertSee('automatically deleted 30 days after creation')
+        ->assertSee('delete your workspace at any time from Workspace settings')
         ->assertSee('under its own terms and privacy policy')
-        ->assertDontSee('IP address')
-        ->assertDontSee('does not retain')
+        ->assertSee('It does not retain raw IP addresses or User-Agent strings in its application database')
+        ->assertSeeText('Infrastructure-provider logs and backups may be retained for a limited period according to the provider\'s own policies')
+        ->assertDontSeeText(['fully GDPR compliant', 'never receives', 'never logs', 'stays in Europe'])
+        ->assertDontSee('consent')
+        ->assertDontSee('Why information is processed')
         ->assertDontSee('Your rights')
         ->assertDontSee('Contact')
         ->assertDontSee('Service providers')
         ->assertDontSee('public demo')
         ->assertDontSee('issues', false)
         ->assertDontSee('TASKNET_')
-        ->assertDontSee('Vercel')
         ->assertDontSee('Neon')
         ->assertDontSee('operated by');
 });
@@ -136,7 +144,7 @@ test('privacy shows configured provider, operator and contact values safely', fu
         ->assertSee('Example Host')
         ->assertSee('Database:')
         ->assertSee('TaskNet is operated by Example Operator.')
-        ->assertSee('Contact')
+        ->assertSee('Who operates TaskNet')
         ->assertSee('Privacy questions can be sent to')
         ->assertSee('mailto:privacy@example.com', false);
 
@@ -205,7 +213,7 @@ test('guests see About, Privacy, Sign in and Start demo on public pages', functi
         ->assertOk()
         ->assertSeeInOrder(['About', 'Sign in', 'Start demo'])
         ->assertSee('href="'.route('login').'"', false)
-        ->assertSee('action="'.route('demo.store').'"', false);
+        ->assertSee('href="'.route('demo.create').'"', false);
 })->with(['home', 'about', 'privacy']);
 
 test('the landing page offers About and Privacy before any demo exists', function () {
@@ -227,7 +235,7 @@ test('authenticated pages never show Sign in or Start demo', function (string $r
         ->get(route($route))
         ->assertOk()
         ->assertDontSee('href="'.route('login').'"', false)
-        ->assertDontSee('action="'.route('demo.store').'"', false)
+        ->assertDontSee('href="'.route('demo.create').'"', false)
         ->assertDontSeeText(['Sign in', 'Start demo']);
 })->with(['dashboard', 'about', 'privacy']);
 
@@ -238,3 +246,22 @@ test('guests see About and Privacy without workspace status or log out', functio
         ->assertDontSee('Log out')
         ->assertDontSee('days left');
 })->with(['about', 'privacy']);
+
+test('the Terms link to Privacy is generated from the named route', function () {
+    expect(file_get_contents(resource_path('views/terms.blade.php')))->toContain("route('privacy')")->not->toContain('localhost');
+
+    $this->get(route('terms'))->assertSee('href="'.route('privacy').'"', false);
+});
+
+test('external links open in a new tab and internal links do not', function () {
+    $about = $this->get(route('about'))->assertOk()->getContent();
+
+    expect($about)
+        ->toMatch('#<a target="_blank" rel="noopener noreferrer" href="https://github\.com/seerat89/tasknet"#')
+        ->toContain('(opens in a new tab)')
+        ->not->toMatch('#<a [^>]*href="'.preg_quote(route('privacy'), '#').'"[^>]*target=#');
+
+    $privacy = $this->get(route('privacy'))->assertOk()->getContent();
+
+    expect($privacy)->not->toContain('target="_blank"');
+});

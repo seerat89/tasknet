@@ -105,7 +105,7 @@ test('login redirects to the dashboard', function () {
 });
 
 test('continuing from the credentials page redirects to the dashboard', function () {
-    $this->post(route('demo.store'));
+    $this->post(route('demo.store'), ['terms' => '1']);
 
     $this->post(route('demo.credentials.continue'))->assertRedirect(route('dashboard'));
 });

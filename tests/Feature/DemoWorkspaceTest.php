@@ -14,14 +14,14 @@ beforeEach(function () {
 });
 
 test('guests can start a demo workspace and are sent to the credential handoff', function () {
-    $response = $this->post(route('demo.store'));
+    $response = $this->post(route('demo.store'), ['terms' => '1']);
 
     $response->assertRedirect(route('demo.credentials'));
     expect(User::count())->toBe(1);
 });
 
 test('the created user is a demo workspace with a friendly Demo ID', function () {
-    $this->post(route('demo.store'));
+    $this->post(route('demo.store'), ['terms' => '1']);
 
     $user = User::sole();
 
@@ -39,7 +39,7 @@ test('every Demo ID is unique', function () {
 });
 
 test('a synthetic internal email is created so visitors never provide one', function () {
-    $this->post(route('demo.store'))->assertSessionHasNoErrors();
+    $this->post(route('demo.store'), ['terms' => '1'])->assertSessionHasNoErrors();
 
     $user = User::sole();
 
@@ -49,7 +49,7 @@ test('a synthetic internal email is created so visitors never provide one', func
 test('the workspace expires thirty days after creation', function () {
     $this->freezeTime();
 
-    $this->post(route('demo.store'));
+    $this->post(route('demo.store'), ['terms' => '1']);
 
     $expected = now()->addDays(30);
 
@@ -58,7 +58,7 @@ test('the workspace expires thirty days after creation', function () {
 });
 
 test('only the password hash is stored and it matches the generated password', function () {
-    $this->post(route('demo.store'));
+    $this->post(route('demo.store'), ['terms' => '1']);
 
     $user = User::sole();
     $password = Crypt::decryptString(session('demo_credentials.password'));
@@ -71,7 +71,7 @@ test('only the password hash is stored and it matches the generated password', f
 });
 
 test('the new demo user is authenticated', function () {
-    $this->post(route('demo.store'));
+    $this->post(route('demo.store'), ['terms' => '1']);
 
     $this->assertAuthenticatedAs(User::sole());
 });
@@ -79,25 +79,63 @@ test('the new demo user is authenticated', function () {
 test('authenticated users cannot start another demo workspace', function () {
     $user = User::factory()->demo()->create();
 
-    $this->actingAs($user)->post(route('demo.store'))->assertRedirect(route('dashboard'));
+    $this->actingAs($user)->post(route('demo.store'), ['terms' => '1'])->assertRedirect(route('dashboard'));
 
     expect(User::count())->toBe(1);
 });
 
-test('demo workspaces cannot be created through GET', function () {
-    $this->get('/demo')->assertStatus(405);
+test('visiting the start page does not create a workspace', function () {
+    $this->get(route('demo.create'))->assertOk();
 
     expect(User::count())->toBe(0);
+});
+
+test('the start page shows the unchecked Terms acknowledgment', function () {
+    $this->get(route('demo.create'))
+        ->assertOk()
+        ->assertSeeText('I agree to the Terms and understand that TaskNet is a demonstration service and should not be used for sensitive, confidential or important information.')
+        ->assertSeeText('By creating a demo workspace, you acknowledge the Privacy Notice.')
+        ->assertSee('href="'.route('terms').'"', false)
+        ->assertSee('href="'.route('privacy').'"', false)
+        ->assertSee('id="terms" name="terms" type="checkbox"', false)
+        ->assertDontSee('checked', false);
+});
+
+test('a demo workspace is not created without accepting the Terms', function (array $payload) {
+    $this->from(route('demo.create'))->post(route('demo.store'), $payload)
+        ->assertRedirect(route('demo.create'))
+        ->assertSessionHasErrors('terms');
+
+    expect(User::count())->toBe(0);
+    $this->assertGuest();
+    $this->assertDatabaseCount('sessions', 0);
+})->with([
+    'missing' => [[]],
+    'empty' => [['terms' => '']],
+    'declined' => [['terms' => '0']],
+    'false' => [['terms' => 'false']],
+]);
+
+test('the Terms error is shown next to the checkbox', function () {
+    $this->followingRedirects()->from(route('demo.create'))->post(route('demo.store'))
+        ->assertSeeText('Please agree to the Terms to create a demo workspace.')
+        ->assertSee('aria-describedby="terms-error"', false);
+});
+
+test('the Terms acknowledgment is not stored', function () {
+    $this->post(route('demo.store'), ['terms' => '1']);
+
+    expect(User::sole()->getAttributes())->not->toHaveKeys(['terms', 'terms_accepted_at']);
 });
 
 test('starting demo workspaces is rate limited per visitor', function () {
     foreach (range(1, 10) as $attempt) {
         auth()->logout();
-        $this->post(route('demo.store'))->assertRedirect(route('demo.credentials'));
+        $this->post(route('demo.store'), ['terms' => '1'])->assertRedirect(route('demo.credentials'));
         $this->app['auth']->forgetGuards();
         $this->flushSession();
     }
 
-    $this->post(route('demo.store'))->assertTooManyRequests();
+    $this->post(route('demo.store'), ['terms' => '1'])->assertTooManyRequests();
     expect(User::count())->toBe(10);
 });

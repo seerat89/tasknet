@@ -17,7 +17,7 @@ test('guests see the TaskNet homepage with demo calls to action', function () {
         'Sign in',
         'About',
         'Privacy',
-    ])->assertSee('action="'.route('demo.store').'"', false)
+    ])->assertSee('href="'.route('demo.create').'"', false)
         ->assertSee('href="'.route('login').'"', false)
         ->assertSee('src="'.asset('brand/tasknet-logo-color.svg').'"', false)
         ->assertSee('src="'.asset('brand/tasknet-mark.svg').'"', false)
@@ -55,7 +55,7 @@ test('authenticated demo users see logout and no email verification actions', fu
         ->assertSee('method="POST"', false)
         ->assertSee('name="_token"', false)
         ->assertDontSee('href="'.route('login').'"', false)
-        ->assertDontSee('action="'.route('demo.store').'"', false)
+        ->assertDontSee('href="'.route('demo.create').'"', false)
         ->assertDontSeeText(['Verify email', 'Start demo', 'Sign in'])
         ->assertDontSee('/email/verify', false);
 });

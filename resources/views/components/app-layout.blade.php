@@ -74,10 +74,7 @@
                             </form>
                         @else
                             <a href="{{ route('login') }}" class="rounded-sm {{ $logout }}">Sign in</a>
-                            <form method="POST" action="{{ route('demo.store') }}">
-                                @csrf
-                                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Start demo</button>
-                            </form>
+                            <a href="{{ route('demo.create') }}" class="inline-flex items-center justify-center rounded-lg bg-teal-700 px-4 py-2 font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Start demo</a>
                         @endif
                     </nav>
 
@@ -100,10 +97,7 @@
                     @guest
                         <div class="flex flex-col gap-3 border-t border-stone-200/70 px-2 pt-4">
                             <a href="{{ route('login') }}" class="flex min-h-12 items-center rounded-lg text-base {{ $logout }}">Sign in</a>
-                            <form method="POST" action="{{ route('demo.store') }}">
-                                @csrf
-                                <button type="submit" class="flex min-h-12 w-full items-center justify-center rounded-lg bg-teal-700 px-4 text-base font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Start demo</button>
-                            </form>
+                            <a href="{{ route('demo.create') }}" class="flex min-h-12 w-full items-center justify-center rounded-lg bg-teal-700 px-4 text-base font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Start demo</a>
                         </div>
                     @endguest
 

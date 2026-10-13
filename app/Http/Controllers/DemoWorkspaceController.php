@@ -3,17 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CreateDemoWorkspace;
+use App\Http\Requests\StartDemoRequest;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Crypt;
 
 class DemoWorkspaceController extends Controller
 {
     /**
+     * Show the form that starts a demo workspace.
+     */
+    public function create(): View
+    {
+        return view('demo.create');
+    }
+
+    /**
      * Create a demo workspace, sign in as it and hand over its credentials once.
      */
-    public function store(Request $request, CreateDemoWorkspace $createDemoWorkspace): RedirectResponse
+    public function store(StartDemoRequest $request, CreateDemoWorkspace $createDemoWorkspace): RedirectResponse
     {
         ['user' => $user, 'password' => $password] = $createDemoWorkspace->create();
 

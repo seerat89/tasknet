@@ -12,11 +12,10 @@
         <x-auth.button>Log in</x-auth.button>
     </form>
 
-    <form method="POST" action="{{ route('demo.store') }}" class="text-center text-sm text-stone-600 dark:text-stone-400">
-        @csrf
+    <p class="text-center text-sm text-stone-600 dark:text-stone-400">
         No workspace yet?
-        <button type="submit" class="rounded-sm font-medium text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:text-teal-400 dark:hover:text-teal-300">Start a demo</button>
-    </form>
+        <a href="{{ route('demo.create') }}" class="rounded-sm font-medium text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:text-teal-400 dark:hover:text-teal-300">Start a demo</a>
+    </p>
 
     <x-demo-notice />
 </x-auth-layout>

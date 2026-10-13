@@ -59,23 +59,23 @@ test('later requests in the same session keep working', function () {
 });
 
 test('a new demo workspace session is stored with its user', function () {
-    fromKnownClient()->post(route('demo.store'))->assertRedirect(route('demo.credentials'));
+    fromKnownClient()->post(route('demo.store'), ['terms' => '1'])->assertRedirect(route('demo.credentials'));
 
     expect(DB::table('sessions')->first()->user_id)->not->toBeNull();
 });
 
 test('IP-based abuse controls still apply per client address', function () {
     foreach (range(1, 10) as $ignored) {
-        fromKnownClient()->post(route('demo.store'))->assertRedirect(route('demo.credentials'));
+        fromKnownClient()->post(route('demo.store'), ['terms' => '1'])->assertRedirect(route('demo.credentials'));
 
         // Each attempt is a new visitor; the throttle only knows the address.
         auth()->guard('web')->forgetUser();
         $this->flushSession();
     }
 
-    fromKnownClient()->post(route('demo.store'))->assertTooManyRequests();
+    fromKnownClient()->post(route('demo.store'), ['terms' => '1'])->assertTooManyRequests();
 
     // A different address has its own allowance.
     $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.99'])
-        ->post(route('demo.store'))->assertRedirect(route('demo.credentials'));
+        ->post(route('demo.store'), ['terms' => '1'])->assertRedirect(route('demo.credentials'));
 });

@@ -11,7 +11,7 @@ uses(LazilyRefreshDatabase::class);
 beforeEach(function () {
     $this->withoutVite();
     $this->freezeTime();
-    $this->post(route('demo.store'));
+    $this->post(route('demo.store'), ['terms' => '1']);
     $this->user = User::sole();
     $this->password = Crypt::decryptString(session('demo_credentials.password'));
 });

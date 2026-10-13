@@ -18,7 +18,7 @@
 
             <section aria-labelledby="clients-heading" class="flex flex-col gap-3 text-lg leading-8 text-stone-700">
                 <h2 id="clients-heading" class="text-2xl font-semibold tracking-tight text-stone-900">External AI clients</h2>
-                <p>You can connect external AI clients to your workspace through MCP. Each client is operated by its provider under that provider’s own terms and privacy policy. You decide which clients to connect and what they may access, and TaskNet cannot control how a provider handles information it receives.</p>
+                <p>You can connect external AI clients to your workspace through MCP. Each client is operated by its provider under that provider’s own terms and privacy policy. You decide which clients to connect. TaskNet limits connected clients to the workspace permissions and MCP tools provided by the service. TaskNet cannot control how a provider handles information it receives.</p>
             </section>
 
             <section aria-labelledby="use-heading" class="flex flex-col gap-3 text-lg leading-8 text-stone-700">

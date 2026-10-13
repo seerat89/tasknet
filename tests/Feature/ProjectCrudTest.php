@@ -165,7 +165,11 @@ test('pages show a breadcrumb trail above their heading', function () {
         ->assertDontSee('<a '.$projectUrl.' class="rounded-sm text-teal-700 underline decoration-teal-700/30 underline-offset-4 hover:text-teal-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">Original</a>', false);
 
     $this->get(route('projects.create'))->assertSeeInOrder(['Breadcrumb', 'Projects', 'New project', '<h1'], false);
-    $this->get(route('projects.edit', $this->project))->assertSeeInOrder(['Breadcrumb', $projectUrl, 'Original', 'Edit', '<h1'], false);
+    $this->get(route('projects.edit', $this->project))->assertSeeInOrder(['Breadcrumb', 'Projects', 'Edit project', '<h1'], false);
     $this->get(route('projects.tasks.create', $this->project))->assertSeeInOrder(['Breadcrumb', $projectUrl, 'Original', 'New task', '<h1'], false);
-    $this->get(route('projects.tasks.edit', [$this->project, $task]))->assertSeeInOrder(['Breadcrumb', $projectUrl, 'Original', 'Crumb Task', 'Edit', '<h1'], false);
+
+    $taskEdit = $this->get(route('projects.tasks.edit', [$this->project, $task]))
+        ->assertSeeInOrder(['Breadcrumb', $projectUrl, 'Original', 'Edit task', '<h1'], false);
+    preg_match('/<nav aria-label="Breadcrumb".*?<\/nav>/s', $taskEdit->getContent(), $breadcrumb);
+    expect($breadcrumb[0])->not->toContain('Crumb Task');
 });

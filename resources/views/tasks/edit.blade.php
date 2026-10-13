@@ -1,5 +1,5 @@
 <x-app-layout title="Edit task">
-    <x-breadcrumbs :items="[['Projects', route('dashboard')], [$project->name, route('projects.show', $project)], [$task->title, null], ['Edit', null]]" />
+    <x-breadcrumbs :items="[['Projects', route('dashboard')], [$project->name, route('projects.show', $project), true], ['Edit task', null]]" />
 
     <h1 class="text-2xl font-semibold tracking-tight">Edit task</h1>
 
