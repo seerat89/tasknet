@@ -175,11 +175,22 @@ Notes:
 
 Access tokens last 1 day and refresh tokens 30 days. Both, and the 30-day grace period for unused clients, are set under `mcp.oauth` in `config/tasknet.php`.
 
-`php artisan tasknet:cleanup-oauth` purges old OAuth records and then deletes stale dynamically registered clients. It is not scheduled yet.
+`php artisan tasknet:cleanup-oauth` purges old OAuth records and then deletes stale dynamically registered clients.
 
 - Expired access-token rows are kept for the whole refresh-token lifetime. A refresh token only points at its access token, and that row is how TaskNet knows which workspace and client the refresh token belongs to.
 - Only clients created through MCP dynamic registration are tracked in `mcp_dynamic_clients`. Clients registered before that table existed are never cleaned up automatically.
 - A tracked client is deleted only when it is older than the grace period and no access token, authorization code or device code still references it. A client shared by several workspaces therefore stays until every workspace has lost its authorization.
+
+## Scheduled cleanup
+
+TaskNet schedules two daily cleanups in `routes/console.php`, in the application timezone (UTC):
+
+- `tasknet:cleanup-demos` at 02:00 deletes expired demo workspaces.
+- `tasknet:cleanup-oauth` at 02:30 purges old OAuth records and stale dynamic clients. It already includes the Passport purge, so do not schedule `passport:purge` separately.
+
+Defining a schedule does not run it. Production must invoke Laravel's scheduler, for example by running `php artisan schedule:run` every minute or by using an equivalent supported mechanism. The hosting integration will be set up at deployment. Both commands are safe to rerun, so no overlap locking is configured; failures are logged.
+
+Locally nothing runs the schedule automatically. Use `php artisan schedule:list` to inspect it, and `schedule:run` or `schedule:work` to run it.
 
 ## Realtime updates
 

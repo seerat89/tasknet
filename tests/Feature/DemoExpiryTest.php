@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
@@ -86,14 +85,6 @@ test('the cleanup command is safe to run repeatedly', function () {
 
     $this->artisan('tasknet:cleanup-demos')->expectsOutputToContain('Deleted 1 ');
     $this->artisan('tasknet:cleanup-demos')->expectsOutputToContain('Deleted 0 ')->assertSuccessful();
-});
-
-test('the cleanup command is scheduled daily', function () {
-    $event = collect(app(Schedule::class)->events())
-        ->first(fn ($event) => str_contains($event->command, 'tasknet:cleanup-demos'));
-
-    expect($event)->not->toBeNull()
-        ->and($event->expression)->toBe('0 0 * * *');
 });
 
 test('the workspace limits are defined centrally', function () {

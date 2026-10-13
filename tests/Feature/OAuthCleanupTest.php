@@ -3,7 +3,6 @@
 use App\Models\McpDynamicClient;
 use App\Models\User;
 use App\Providers\AppServiceProvider;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -241,10 +240,4 @@ test('running the cleanup repeatedly is safe', function () {
     cleanupOAuth();
 
     expect(clientExists($stale))->toBeFalse()->and(clientExists($fresh))->toBeTrue();
-});
-
-test('the cleanup is not scheduled yet', function () {
-    $commands = collect(app(Schedule::class)->events())->pluck('command')->implode(' ');
-
-    expect($commands)->not->toContain('cleanup-oauth')->not->toContain('passport:purge');
 });
