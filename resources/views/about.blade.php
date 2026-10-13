@@ -103,7 +103,7 @@
 
             <div class="flex max-w-3xl flex-col gap-3">
                 <p class="rounded-lg border border-stone-200 bg-stone-100/70 px-4 py-3 text-sm leading-6 text-stone-700">MCP support and available features vary between clients and subscription plans. Check your AI client’s official documentation to confirm that it supports connecting to custom MCP servers.</p>
-                <p class="text-sm leading-6 text-stone-500">Testing locally? A local TaskNet instance can be exposed to remote MCP clients through a secure tunnel such as ngrok or Cloudflare Tunnel. <x-external-link href="https://github.com/seerat89/tasknet/blob/main/docs/development.md#testing-with-remote-ai-clients-tunnels" class="{{ $textLink }}">See the local testing guide</x-external-link>.</p>
+                <p class="text-sm leading-6 text-stone-500">Testing locally? A local TaskNet instance can be exposed to remote MCP clients through a secure tunnel such as ngrok or Cloudflare Tunnel. <x-external-link href="https://github.com/seerat89/tasknet/blob/main/docs/development.md#remote-ai-clients-tunnels" class="{{ $textLink }}">See the local testing guide</x-external-link>.</p>
             </div>
         </section>
 

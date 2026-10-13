@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests, style and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: tasknet_test
+          POSTGRES_USER: tasknet_ci
+          POSTGRES_PASSWORD: ci-test-only-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tasknet_ci -d tasknet_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Test-only values. The local suite uses in-memory SQLite (phpunit.xml); CI overrides it
+    # with PostgreSQL through the environment, which PHPUnit does not replace.
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: tasknet_test
+      DB_USERNAME: tasknet_ci
+      DB_PASSWORD: ci-test-only-password
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          extensions: bcmath, intl, mbstring, pcntl, pdo_pgsql, pgsql, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Prepare the application
+        run: |
+          cp .env.example .env
+          echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
+
+      - name: Check code style
+        run: ./vendor/bin/pint --test
+
+      - name: Run tests on PostgreSQL
+        run: php artisan test
+
+      - name: Audit Composer dependencies
+        run: composer audit
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
+      - name: Audit npm production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      # Build-tool findings do not ship to users, so they are reported without failing CI.
+      - name: Audit all npm dependencies (informational)
+        run: npm audit
+        continue-on-error: true

@@ -2,7 +2,7 @@
     <div class="flex max-w-3xl flex-col gap-12 pb-6">
         <header class="flex flex-col gap-3">
             <h1 class="text-4xl font-semibold tracking-tight text-stone-900">Terms</h1>
-            <p class="text-xl text-stone-600">By using TaskNet you agree to these terms.</p>
+            <p class="text-xl text-stone-600">By creating or using a demo workspace, you agree to these Terms.</p>
         </header>
 
         <div class="flex flex-col gap-10 border-t border-stone-200 pt-12">

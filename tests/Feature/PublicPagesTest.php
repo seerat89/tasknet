@@ -52,7 +52,7 @@ test('about explains TaskNet without legal disclaimers and links to the terms', 
         ->assertSee('Testing locally?')
         ->assertSee('ngrok')
         ->assertSee('Cloudflare Tunnel')
-        ->assertSee('docs/development.md#testing-with-remote-ai-clients-tunnels', false)
+        ->assertSee('docs/development.md#remote-ai-clients-tunnels', false)
         ->assertSee('href="'.route('terms').'"', false)
         ->assertDontSee('Demo disclaimer')
         ->assertDontSee('provided as-is')

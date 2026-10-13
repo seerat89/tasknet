@@ -1,41 +1,11 @@
 # TaskNet
 
-TaskNet is a Laravel portfolio project demonstrating how users can connect their own AI agents to an application through MCP and perform authorized operations.
+Read and follow `AGENTS.md`; it holds the project rules. TaskNet is not deployed yet (target: https://tasknet.seerat.me on Vercel with Neon PostgreSQL).
 
-Read and follow `AGENTS.md` before making changes. It contains the main Laravel and project engineering conventions.
+Claude-specific working rules:
 
-## Current Direction
-
-TaskNet is intended to be deployed publicly as a temporary MCP testing environment at https://tasknet.seerat.me (not deployed yet).
-
-Demo workspaces are temporary and are not intended for real or sensitive project data.
-
-Demo-account authentication (implemented; Fortify handles login/logout only):
-
-- isolated workspace per demo user (the `User` model, `is_demo = true`)
-- generated Demo ID and password, shown once (`App\Actions\CreateDemoWorkspace`)
-- no real email, no email verification, no password recovery
-- 30-day expiry, enforced at login and by middleware; expired workspaces are deleted by `tasknet:cleanup-demos` (scheduled daily)
-- limits of 10 projects and 100 tasks per workspace are defined in `config/tasknet.php` but not enforced yet (Projects and Tasks do not exist)
-- web UI and future MCP access must use the same authorization and limits
-
-Infrastructure:
-
-- local development: SQLite (Laravel through Herd on Windows)
-- automated tests: in-memory SQLite (see `phpunit.xml`)
-- production target: Neon Postgres, on Vercel at tasknet.seerat.me
-- Vercel and Neon are targets only; nothing is deployed or configured yet
-
-Database compatibility: development uses SQLite and production will use PostgreSQL, so prefer standard Laravel migrations and Eloquent. Avoid SQLite-specific raw SQL, and avoid PostgreSQL-specific features unless explicitly approved. Verify production migrations and important flows against Neon/PostgreSQL before launch.
-
-## Development Rules
-
-Never read, print, expose, or modify `.env`, credentials, private keys, auth tokens, or other secret files.
-
-Use `.env.example` when environment-variable names are needed.
-
-Do not commit or push unless explicitly asked.
-
-Do not add dependencies without approval.
-
-Use Laravel Boost and the installed Laravel documentation/tools when version-specific behavior needs verification.
+- Inspect `git status` and the relevant code before changing anything. Never reset, restore or discard unrelated uncommitted work.
+- Never read, print or modify `.env`, keys or other secrets (see `.claude/settings.json`). Use `.env.example` for variable names.
+- Do not commit or push unless explicitly asked.
+- Keep changes focused and respect TaskNet's architecture and privacy decisions: shared actions for web and MCP, no raw IP or User-Agent storage.
+- Run only the checks the change needs; do not run the full suite or a build for copy-only edits.

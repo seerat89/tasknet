@@ -1,12 +1,15 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "seerat89/tasknet",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "A Laravel project and task manager that demonstrates connecting AI agents through MCP and OAuth.",
     "keywords": [
         "laravel",
-        "framework"
+        "mcp",
+        "oauth",
+        "ai-agents"
     ],
+    "homepage": "https://github.com/seerat89/tasknet",
     "license": "MIT",
     "require": {
         "php": "^8.3",
