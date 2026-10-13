@@ -63,6 +63,10 @@ jobs:
           cp .env.example .env
           echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
 
+      # OAuth signing keys are git-ignored; some tests need them to exist, as they do after the first local start.
+      - name: Generate OAuth keys
+        run: php artisan passport:keys --no-interaction
+
       - name: Check code style
         run: ./vendor/bin/pint --test
 
