@@ -63,6 +63,19 @@ jobs:
           cp .env.example .env
           echo "APP_KEY=$(php artisan key:generate --show)" >> "$GITHUB_ENV"
 
+      # Built first because the tests render pages that load the Vite manifest.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
       # OAuth signing keys are git-ignored; some tests need them to exist, as they do after the first local start.
       - name: Generate OAuth keys
         run: php artisan passport:keys --no-interaction
@@ -75,18 +88,6 @@ jobs:
 
       - name: Audit Composer dependencies
         run: composer audit
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install npm dependencies
-        run: npm ci
-
-      - name: Build frontend assets
-        run: npm run build
 
       - name: Audit npm production dependencies
         run: npm audit --omit=dev --audit-level=high
