@@ -120,7 +120,7 @@ test('a project can be deleted and its tasks are deleted with it', function () {
     $otherTask = Task::factory()->for($this->otherProject)->create();
 
     $this->actingAs($this->user)->delete(route('projects.destroy', $this->project))
-        ->assertRedirect(route('dashboard'))
+        ->assertRedirect(route('projects.index'))
         ->assertSessionHas('success', 'Project deleted.');
 
     expect(Project::find($this->project->id))->toBeNull()
@@ -154,7 +154,7 @@ test('expired demo users cannot use project routes', function () {
 
 test('pages show a breadcrumb trail above their heading', function () {
     $task = Task::factory()->for($this->project)->create(['title' => 'Crumb Task']);
-    $dashboard = 'href="'.route('dashboard').'"';
+    $dashboard = 'href="'.route('projects.index').'"';
     $projectUrl = 'href="'.route('projects.show', $this->project).'"';
 
     $this->actingAs($this->user);

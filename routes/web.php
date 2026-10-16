@@ -38,6 +38,6 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/mcp-clients/{client}', [AuthorizedMcpClientController::class, 'destroy'])->name('settings.clients.destroy');
     Route::delete('/settings/workspace', [WorkspaceController::class, 'destroy'])->name('workspace.destroy');
 
-    Route::resource('projects', ProjectController::class)->except('index');
+    Route::resource('projects', ProjectController::class);
     Route::resource('projects.tasks', TaskController::class)->scoped()->except(['index', 'show']);
 });

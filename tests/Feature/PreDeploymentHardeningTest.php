@@ -197,13 +197,13 @@ test('MCP applies the same due_date rule', function (string $value, bool $valid)
     'with time' => ['2026-10-11T10:00:00Z', false],
 ]);
 
-test('execute_tools rejects malformed due dates over HTTP', function () {
+test('create_task rejects malformed due dates over HTTP', function () {
     $user = User::factory()->demo()->create();
     $project = Project::factory()->for($user)->create();
     Passport::actingAs($user, ['mcp:use'], 'api');
 
-    $bad = executeCatalogTool($this, 'create_task', ['project_id' => $project->id, 'title' => 'T', 'due_date' => '999999-01-01'])->assertOk();
-    $good = executeCatalogTool($this, 'create_task', ['project_id' => $project->id, 'title' => 'T', 'due_date' => '2026-10-11'])->assertOk();
+    $bad = callMcpToolOverHttp($this, 'create_task', ['project_id' => $project->id, 'title' => 'T', 'due_date' => '999999-01-01'])->assertOk();
+    $good = callMcpToolOverHttp($this, 'create_task', ['project_id' => $project->id, 'title' => 'T', 'due_date' => '2026-10-11'])->assertOk();
 
     expect(mcpResult($bad)['isError'])->toBeTrue()
         ->and(mcpResult($good)['isError'])->toBeFalse()

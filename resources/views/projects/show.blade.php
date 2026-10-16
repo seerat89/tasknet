@@ -5,7 +5,7 @@
 @endphp
 
 <x-app-layout :title="$project->name" :realtime="true">
-    <x-breadcrumbs :items="[['Projects', route('dashboard')], [$project->name, null, true]]" />
+    <x-breadcrumbs :items="[['Projects', route('projects.index')], [$project->name, null, true]]" />
 
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="flex min-w-0 flex-col gap-2">

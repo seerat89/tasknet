@@ -68,7 +68,7 @@ The MCP server is at http://localhost:8000/mcp. Clients authenticate with OAuth 
 3. The user signs in with a Demo ID and approves the connection at `/oauth/authorize` (authorization code with PKCE, scope `mcp:use`).
 4. The client exchanges the code at `/oauth/token` for an access token and a refresh token.
 
-Tools: `list_projects`, `get_project`, `list_tasks` and `get_task` are advertised directly. `create_project`, `update_project`, `create_task` and `update_task` are in a searchable catalog (`ToolSearch` in `app/Mcp/Servers/TaskNetServer.php`) reached through `search_tools` and `execute_tools`. This demonstrates progressive tool disclosure; catalog tools run with the same user, actions, policies and limits. There are no delete tools.
+Tools: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task` and `update_task`, all advertised directly. They run as the authorized user through the same actions, policies and limits as the web UI. There are no delete tools.
 
 OAuth signing keys are created in `storage/oauth-*.key` on first start and are git-ignored. For hosted environments, set `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` instead.
 
@@ -78,7 +78,7 @@ OAuth signing keys are created in `storage/oauth-*.key` on first start and are g
 npx @modelcontextprotocol/inspector --server-url http://localhost:8000/mcp --transport http
 ```
 
-Connect, sign in with a demo workspace's Demo ID when redirected, and approve. Then try `list_projects`, or `search_tools` followed by `execute_tools`.
+Connect, sign in with a demo workspace's Demo ID when redirected, and approve. The eight tools appear on the Tools tab; pick one, enter its arguments and run it.
 
 ### Remote AI clients (tunnels)
 

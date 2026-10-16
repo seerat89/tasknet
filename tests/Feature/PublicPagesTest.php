@@ -156,7 +156,7 @@ test('the authenticated navigation links to about and the footer to privacy', fu
 
     $this->actingAs($user)->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('href="'.route('dashboard').'"', false)
+        ->assertSee('href="'.route('projects.index').'"', false)
         ->assertSeeInOrder(['Projects', 'About'])
         ->assertSee('href="'.route('about').'"', false)
         ->assertSee('href="'.route('privacy').'"', false)
@@ -164,10 +164,10 @@ test('the authenticated navigation links to about and the footer to privacy', fu
         ->assertDontSeeText('Workspace will be deleted');
 });
 
-test('the dashboard statistic is labelled Completed tasks', function () {
+test('the dashboard shows the completed share of tasks', function () {
     $this->actingAs(User::factory()->demo()->create())
         ->get(route('dashboard'))
-        ->assertSee('Completed tasks');
+        ->assertSeeInOrder(['Completed', '0% of tasks']);
 });
 
 test('guests can reach both pages from the home page footer', function () {

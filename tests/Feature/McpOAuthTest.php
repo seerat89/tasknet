@@ -42,12 +42,12 @@ test('a token without the MCP scope is rejected', function () {
     mcpRequest($this, 'tools/list')->assertForbidden();
 });
 
-test('an authenticated OAuth user lists the read tools and the tool catalog', function () {
+test('an authenticated OAuth user lists the eight TaskNet tools', function () {
     Passport::actingAs($this->user, ['mcp:use'], 'api');
 
     $tools = mcpRequest($this, 'tools/list')->assertOk()->json('result.tools.*.name');
 
-    expect($tools)->toBe(['list_projects', 'get_project', 'list_tasks', 'get_task', 'search_tools', 'execute_tools']);
+    expect($tools)->toBe(['list_projects', 'get_project', 'create_project', 'update_project', 'list_tasks', 'get_task', 'create_task', 'update_task']);
 });
 
 test('an authenticated OAuth user only sees their own workspace', function () {
@@ -64,10 +64,10 @@ test('creating a project over HTTP uses the OAuth user and the existing limits',
     config()->set('tasknet.limits.projects', 2);
     Passport::actingAs($this->user, ['mcp:use'], 'api');
 
-    executeCatalogTool($this, 'create_project', ['name' => 'Second', 'user_id' => $this->otherUser->id])
+    callMcpToolOverHttp($this, 'create_project', ['name' => 'Second', 'user_id' => $this->otherUser->id])
         ->assertOk();
 
-    $limited = executeCatalogTool($this, 'create_project', ['name' => 'Third'])->assertOk();
+    $limited = callMcpToolOverHttp($this, 'create_project', ['name' => 'Third'])->assertOk();
 
     expect(mcpResult($limited)['isError'])->toBeTrue()
         ->and(json_encode(mcpResult($limited)))->toContain('You can create up to 2 projects')
@@ -80,7 +80,7 @@ test('an expired demo workspace cannot use MCP even with a valid token', functio
     Passport::actingAs($expired, ['mcp:use'], 'api');
 
     mcpRequest($this, 'tools/list')->assertForbidden();
-    executeCatalogTool($this, 'create_project', ['name' => 'Too late'])->assertForbidden();
+    callMcpToolOverHttp($this, 'create_project', ['name' => 'Too late'])->assertForbidden();
 
     expect($expired->projects()->count())->toBe(0);
 });

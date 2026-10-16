@@ -46,18 +46,4 @@ return [
 
     'authorization_server' => null,
 
-    /*
-    |--------------------------------------------------------------------------
-    | Tool Search
-    |--------------------------------------------------------------------------
-    |
-    | Limits enforced during tool search (see the package defaults).
-    |
-    */
-
-    'tool_search' => [
-        'max_tool_calls' => 10,
-        'max_output_bytes' => 65_536,
-    ],
-
 ];

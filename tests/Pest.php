@@ -1,10 +1,6 @@
 <?php
 
 use App\Mcp\Servers\TaskNetServer;
-use App\Mcp\Tools\CreateProjectTool;
-use App\Mcp\Tools\CreateTaskTool;
-use App\Mcp\Tools\UpdateProjectTool;
-use App\Mcp\Tools\UpdateTaskTool;
 use App\Models\User;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -12,7 +8,6 @@ use Illuminate\Testing\TestResponse;
 use Laravel\Mcp\Server\Testing\PendingTestResponse;
 use Laravel\Mcp\Server\Testing\TestResponse as McpTestResponse;
 use Laravel\Mcp\Server\Tool;
-use Laravel\Mcp\Server\Tools\ToolSearch;
 use Laravel\Passport\Client;
 use Laravel\Passport\Passport;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -164,38 +159,22 @@ function mcpAs(User $user): PendingTestResponse
 /**
  * Call a TaskNet MCP tool in-process as the given OAuth user.
  *
- * Mutation tools are not advertised directly; they live in the searchable tool catalog,
- * so they are run through execute_tools exactly as an AI client would run them.
- *
  * @param  class-string<Tool>  $tool
  * @param  array<string, mixed>  $arguments
  */
 function callMcpTool(User $user, string $tool, array $arguments = []): McpTestResponse
 {
-    $catalogTools = [CreateProjectTool::class, UpdateProjectTool::class, CreateTaskTool::class, UpdateTaskTool::class];
-
-    if (! in_array($tool, $catalogTools, true)) {
-        return mcpAs($user)->tool($tool, $arguments);
-    }
-
-    [, $executeTools] = (new ToolSearch($catalogTools))->tools();
-
-    return mcpAs($user)->tool($executeTools, [
-        'calls' => [['name' => (new $tool)->name(), 'arguments' => $arguments]],
-    ]);
+    return mcpAs($user)->tool($tool, $arguments);
 }
 
 /**
- * Run one catalog tool over HTTP through execute_tools.
+ * Call one TaskNet MCP tool over HTTP, as an AI client would.
  *
  * @param  array<string, mixed>  $arguments
  */
-function executeCatalogTool(mixed $test, string $tool, array $arguments = []): TestResponse
+function callMcpToolOverHttp(mixed $test, string $tool, array $arguments = []): TestResponse
 {
-    return mcpRequest($test, 'tools/call', [
-        'name' => 'execute_tools',
-        'arguments' => ['calls' => [['name' => $tool, 'arguments' => (object) $arguments]]],
-    ]);
+    return mcpRequest($test, 'tools/call', ['name' => $tool, 'arguments' => (object) $arguments]);
 }
 
 /**

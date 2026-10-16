@@ -21,7 +21,7 @@ test('guests cannot access the dashboard', function () {
 test('active demo users can access the dashboard', function () {
     $this->actingAs($this->user)->get(route('dashboard'))
         ->assertOk()
-        ->assertSeeText(['Projects', 'Organize a few projects and tasks, then connect your AI agent through MCP.']);
+        ->assertSeeText(['Workspace overview', 'A quick look at your projects and tasks.']);
 });
 
 test('expired users cannot reach the dashboard', function () {
@@ -58,7 +58,7 @@ test('the dashboard shows workspace usage against the configured limits', functi
     Task::factory()->count(4)->create();
 
     $this->actingAs($this->user)->get(route('dashboard'))
-        ->assertSeeInOrder(['Projects', '2 / 10', 'Tasks', '5 / 100']);
+        ->assertSeeInOrder(['Projects', '2 / 10', '8 remaining', 'Tasks', '5 / 100', '95 remaining']);
 });
 
 test('the dashboard shows an empty state when there are no projects', function () {
@@ -138,4 +138,148 @@ test('an actually expired workspace is still logged out instead of shown', funct
     $user = User::factory()->demo()->expired()->create();
 
     $this->actingAs($user)->get(route('dashboard'))->assertRedirect(route('login'));
+});
+
+test('the dashboard charts task status and tasks per project from the workspace data', function () {
+    $big = Project::factory()->for($this->user)->create(['name' => 'Big project']);
+    $small = Project::factory()->for($this->user)->create(['name' => 'Small project']);
+    Task::factory()->count(2)->for($big)->create(['status' => TaskStatus::Todo]);
+    Task::factory()->for($big)->create(['status' => TaskStatus::InProgress]);
+    Task::factory()->count(3)->for($small)->create(['status' => TaskStatus::Completed]);
+
+    $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSee('aria-label="Task status: 2 todo, 1 in progress, 3 completed"', false)
+        ->assertSeeInOrder(['Task status', 'Todo', '2', 'In progress', '1', 'Completed', '3'])
+        ->assertSeeInOrder(['Tasks by project', 'Big project', 'Small project']);
+});
+
+test('the dashboard charts do not include other workspaces and are hidden without tasks', function () {
+    $other = Project::factory()->for(User::factory()->demo()->create())->create(['name' => 'Elsewhere']);
+    Task::factory()->for($other)->create();
+    Project::factory()->for($this->user)->create();
+
+    $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertDontSee('Task status')
+        ->assertDontSee('Tasks by project')
+        ->assertDontSee('Elsewhere');
+});
+
+test('the summary cards show the remaining capacity and never go below zero', function () {
+    config()->set('tasknet.limits.projects', 1);
+    $project = Project::factory()->for($this->user)->create();
+    Task::factory()->count(4)->for($project)->create();
+
+    $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSeeInOrder(['Projects', '1 / 1', '0 remaining', 'Tasks', '4 / 100', '96 remaining']);
+});
+
+test('the dashboard lists only the four most recently updated projects with a link to all of them', function () {
+    foreach (range(1, 6) as $number) {
+        Project::factory()->for($this->user)->create([
+            'name' => "Project {$number}",
+            'updated_at' => now()->subDays(10 - $number),
+        ]);
+    }
+
+    $response = $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSeeText('Recent projects')
+        ->assertSeeText('4 of 6')
+        ->assertSeeInOrder(['Project 6', 'Project 5', 'Project 4', 'Project 3'])
+        ->assertSee('href="'.route('projects.index').'"', false)
+        ->assertSeeText('View all projects');
+
+    expect(substr_count($response->getContent(), 'View all projects'))->toBe(1);
+    $response->assertDontSee('>Project 2</h2>', false)->assertDontSee('>Project 1</h2>', false);
+});
+
+test('the dashboard shows every project when there are four or fewer', function () {
+    Project::factory()->count(3)->for($this->user)->create();
+
+    $this->actingAs($this->user)->get(route('dashboard'))->assertSeeText('3 of 3');
+});
+
+test('the tasks-by-project chart shows the five busiest projects, busiest first', function () {
+    foreach (range(1, 7) as $number) {
+        $project = Project::factory()->for($this->user)->create(['name' => "Chart {$number}"]);
+        Task::factory()->count($number)->for($project)->create();
+    }
+
+    $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSeeInOrder(['Tasks by project', 'Chart 7', 'Chart 6', 'Chart 5', 'Chart 4', 'Chart 3', 'Recent projects'])
+        ->assertSeeText('Task volume across your busiest projects.')
+        ->assertDontSee('title="Chart 2"', false)
+        ->assertDontSee('title="Chart 1"', false);
+});
+
+test('the chart subtitle stays simple with five or fewer projects', function () {
+    $project = Project::factory()->for($this->user)->create();
+    Task::factory()->for($project)->create();
+
+    $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSeeText('Task volume across your current projects.');
+});
+
+/**
+ * Get the project rows the dashboard embeds for the chart search.
+ *
+ * @return array<int, array{name: string, description: string, tasks: int}>
+ */
+function chartSearchData(string $html): array
+{
+    preg_match('#<script type="application/json" data-project-data>(.*?)</script>#s', $html, $matches);
+
+    return json_decode(html_entity_decode($matches[1]), true);
+}
+
+test('the chart lists at most five projects by default, busiest first, and breaks ties by recent update', function () {
+    foreach ([['Busiest', 9, 5], ['Tied old', 3, 4], ['Tied new', 3, 1], ['Two', 2, 2], ['One', 1, 3], ['Zero A', 0, 6], ['Zero B', 0, 7]] as [$name, $tasks, $daysAgo]) {
+        $project = Project::factory()->for($this->user)->create(['name' => $name, 'updated_at' => now()->subDays($daysAgo)]);
+        Task::factory()->count($tasks)->for($project)->create();
+    }
+
+    $html = $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSeeInOrder(['title="Busiest"', 'title="Tied new"', 'title="Tied old"', 'title="Two"', 'title="One"'], false)
+        ->assertDontSee('title="Zero A"', false)
+        ->assertDontSee('title="Zero B"', false)
+        ->getContent();
+
+    expect(substr_count($html, 'class="truncate font-semibold" title='))->toBe(5);
+});
+
+test('the chart search data contains every project, including those without tasks', function () {
+    $busy = Project::factory()->for($this->user)->create(['name' => 'Busy one', 'description' => 'Has work']);
+    Task::factory()->count(2)->for($busy)->create();
+    foreach (range(1, 6) as $number) {
+        Project::factory()->for($this->user)->create(['name' => "Quiet {$number}"]);
+    }
+    Project::factory()->for(User::factory()->demo()->create())->create(['name' => 'Other workspace']);
+
+    $data = chartSearchData($this->actingAs($this->user)->get(route('dashboard'))->getContent());
+
+    expect($data)->toHaveCount(7)
+        ->and($data[0])->toBe(['name' => 'Busy one', 'description' => 'Has work', 'tasks' => 2])
+        ->and(collect($data)->pluck('name'))->toContain('Quiet 6')->not->toContain('Other workspace')
+        ->and(collect($data)->firstWhere('name', 'Quiet 6')['tasks'])->toBe(0);
+});
+
+test('the chart card offers a labelled search with a clear button and a no-results message', function () {
+    $project = Project::factory()->for($this->user)->create();
+    Task::factory()->for($project)->create();
+
+    $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSee('<label for="project-chart-search" class="sr-only">Search projects</label>', false)
+        ->assertSee('placeholder="Search projects..."', false)
+        ->assertSee('aria-label="Clear search"', false)
+        ->assertSeeText('No matching projects');
+});
+
+test('the chart data reflects new tasks after a refresh', function () {
+    $project = Project::factory()->for($this->user)->create(['name' => 'Live']);
+    Task::factory()->for($project)->create();
+
+    $first = chartSearchData($this->actingAs($this->user)->get(route('dashboard'))->getContent());
+    Task::factory()->count(2)->for($project)->create();
+    $second = chartSearchData($this->actingAs($this->user)->get(route('dashboard'))->getContent());
+
+    expect($first[0]['tasks'])->toBe(1)->and($second[0]['tasks'])->toBe(3);
 });

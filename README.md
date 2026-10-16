@@ -19,7 +19,6 @@ TaskNet explores how AI agents can work with a Laravel application through MCP w
 - An MCP server built with Laravel MCP
 - OAuth 2 authorization with PKCE, including dynamic client registration and per-workspace revocation
 - Shared actions, policies and limits behind both the web UI and MCP tools
-- Progressive MCP tool discovery
 - Realtime UI updates with Laravel Reverb and Echo
 - Temporary demo workspaces with generated credentials, expiry and scheduled cleanup
 - Privacy-conscious session handling: no IP addresses or User-Agent strings are stored in sessions
@@ -35,7 +34,7 @@ An AI client connects to `/mcp` and authorizes through OAuth on a TaskNet screen
 
 ## MCP tools
 
-`list_projects`, `get_project`, `list_tasks` and `get_task` are advertised directly. The mutation tools (`create_project`, `update_project`, `create_task`, `update_task`) are reached through `search_tools` and `execute_tools`, which demonstrates progressive tool disclosure. There are no delete tools. Details are in [docs/development.md](docs/development.md#mcp-development).
+TaskNet exposes eight tools directly: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task` and `update_task`. There are no delete tools. Details are in [docs/development.md](docs/development.md#mcp-development).
 
 ## Tech stack
 

@@ -1,5 +1,7 @@
 import './menu';
 import './realtime';
+import './project-search';
+import './project-directory';
 
 const showSaveStatus = (message, isError = false) => {
     const status = document.getElementById('save-status');
