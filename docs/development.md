@@ -120,7 +120,7 @@ docker build -f Dockerfile.vercel -t tasknet-vercel .
 docker run --rm -p 8081:80 -e APP_KEY="$(docker run --rm tasknet-vercel php artisan key:generate --show)" tasknet-vercel
 ```
 
-Open http://localhost:8081/up. Pages that use sessions also need the `DB_*` variables and a migrated database. The image contains no `.env`, OAuth keys or credentials, and it never runs migrations; configuration comes from environment variables and migrations are a separate release step. Supply the OAuth signing keys as `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY`.
+Open http://localhost:8081/up. Pages that use sessions also need the `DB_*` variables and a migrated database. On Vercel the Neon integration provides the pooled connection as `DB_DATABASE_URL`, which Laravel uses when `DB_URL` is not set. Neon's unpooled URL is for migrations and admin tasks only. The image contains no `.env`, OAuth keys or credentials, and it never runs migrations; configuration comes from environment variables and migrations are a separate release step. Supply the OAuth signing keys as `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY`.
 
 ## Useful commands
 
