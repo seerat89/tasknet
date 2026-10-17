@@ -1,6 +1,6 @@
 # TaskNet
 
-Read and follow `AGENTS.md`; it holds the project rules. TaskNet is not deployed yet (target: https://tasknet.seerat.me on Vercel with Neon PostgreSQL).
+Read and follow `AGENTS.md`; it holds the project rules. TaskNet is deployed at https://tasknet.seerat.me (Vercel with Neon PostgreSQL).
 
 Claude-specific working rules:
 

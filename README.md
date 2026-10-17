@@ -11,34 +11,58 @@
 
 # TaskNet
 
-TaskNet explores how AI agents can work with a Laravel application through MCP while following the same validation, permissions and application rules as the browser interface. It is a small project and task manager with temporary demo workspaces that you can connect your own AI client to.
+**Live demo: https://tasknet.seerat.me**
+
+TaskNet is a small project and task manager built to explore how an AI agent can work with a Laravel application through [MCP](https://modelcontextprotocol.io) while following the same validation, permissions and business rules as the browser. You start a temporary demo workspace, connect your own AI client, and manage projects and tasks from either side. Changes made by the agent show up in the browser as they happen.
+
+I built it as a portfolio project to show how to expose an existing Laravel application to AI clients without a second, parallel implementation of its rules.
+
+> **This is a demo, not a product.** Do not store sensitive, confidential or important information in it. Demo workspaces are temporary and are deleted automatically.
+
+## Try it
+
+1. Open https://tasknet.seerat.me and start a demo. TaskNet generates a Demo ID and password without requiring an email address. Save them: the password is shown once.
+2. Create a few projects and tasks in the browser.
+3. Add `https://tasknet.seerat.me/mcp` as a custom MCP server in your AI client. You sign in with your Demo ID on a TaskNet screen and approve the connection, so the client never sees your password.
+4. Ask the agent to list, create or update projects and tasks. Keep the browser open: it updates on its own.
+
+MCP support for custom servers varies by client and plan.
 
 ## What it demonstrates
 
-- A server-rendered Laravel web application for projects and tasks
-- An MCP server built with Laravel MCP
-- OAuth 2 authorization with PKCE, including dynamic client registration and per-workspace revocation
-- Shared actions, policies and limits behind both the web UI and MCP tools
-- Realtime UI updates with Laravel Reverb and Echo
-- Temporary demo workspaces with generated credentials, expiry and scheduled cleanup
-- Privacy-conscious session handling: no IP addresses or User-Agent strings are stored in sessions
+- **One set of rules for two interfaces.** The web UI and the MCP tools call the same Laravel actions, policies, validation and limits. Nothing is reimplemented for the agent.
+- **A real MCP server.** Built with Laravel MCP, with a deliberately small surface: eight tools, no delete tools.
+- **OAuth 2.0 for AI clients.** Laravel Passport with the authorization-code flow, PKCE, refresh tokens and dynamic client registration. Users can revoke an authorized client from their workspace.
+- **Realtime updates.** Browser and MCP changes are broadcast through Laravel Reverb and Echo, with Redis so it works across server instances.
+- **Isolated, temporary workspaces.** Each demo has its own data, limits of 10 projects and 100 tasks, and expires after 30 days. A scheduled cleanup removes expired workspaces and stale OAuth records.
+- **Privacy-minded by design.** No email, no analytics cookies, and no IP addresses or User-Agent strings stored in sessions.
 
 ## How it works
 
 ```
-Browser   → Laravel UI → shared actions, policies and limits → projects and tasks
-AI client → OAuth → MCP server → shared actions, policies and limits → projects and tasks
+Browser   ──▶ Laravel UI ─────────────┐
+                                       ├─▶ shared actions, policies, validation, limits ─▶ PostgreSQL
+AI client ──▶ OAuth ─▶ MCP server ─────┘                      │
+                                                              └─ events ─▶ Reverb (+ Redis) ─▶ browser updates
 ```
 
-An AI client connects to `/mcp` and authorizes through OAuth on a TaskNet screen, so it never receives the user's password. Every tool call runs as that workspace's user.
+An AI client connects to `/mcp` and authorizes through OAuth. Every tool call then runs as that workspace's user, so the same policies that protect the web UI protect the agent. After each change, the shared action emits an event; Reverb pushes it to the open browser, which refreshes. A realtime outage never fails a saved change.
 
 ## MCP tools
 
-TaskNet exposes eight tools directly: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task` and `update_task`. There are no delete tools. Details are in [docs/development.md](docs/development.md#mcp-development).
+`list_projects` · `get_project` · `create_project` · `update_project` · `list_tasks` · `get_task` · `create_task` · `update_task`
 
-## Tech stack
+All eight are advertised directly. There are intentionally no delete tools, so an agent can create and edit but not remove data.
 
-Laravel 13 on PHP 8.5 · PostgreSQL · Laravel Passport · Laravel MCP · Laravel Reverb and Echo · Blade and Tailwind CSS 4 · Docker Compose
+## Architecture and stack
+
+- **Application:** Laravel 13 on PHP 8.5, server-rendered Blade with Tailwind CSS 4 and minimal JavaScript
+- **Data:** PostgreSQL (Neon in production), database-backed sessions
+- **AI integration:** Laravel MCP and Laravel Passport
+- **Realtime:** Laravel Reverb and Echo, with Upstash Redis for cross-instance delivery
+- **Hosting:** Vercel container deployment (FrankenPHP); scheduled cleanup through Vercel Cron; Vercel Web Analytics
+- **CI/CD:** GitHub Actions runs Pest tests on PostgreSQL, Laravel Pint, dependency audits and the frontend build, then migrates the production database. Vercel only releases to production after that migration check passes.
+- **Local development:** Docker Compose
 
 ## Running locally
 
@@ -51,16 +75,15 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Open http://localhost:8000. The first start installs dependencies and runs the migrations. See [docs/development.md](docs/development.md) for details.
-
-## Tests
-
-Pest tests run on in-memory SQLite locally and on PostgreSQL in GitHub Actions CI, which also runs Laravel Pint, a Composer audit and the frontend production build.
+Open http://localhost:8000. The first start installs dependencies and runs the migrations. Full setup, MCP testing and the production image are covered in [docs/development.md](docs/development.md).
 
 ```bash
 docker compose exec app php artisan test
 ```
 
-## Status
+## Limits and caveats
 
-TaskNet is under development and is not publicly deployed yet.
+- Demo workspaces expire after 30 days and are then deleted. Each is limited to 10 projects and 100 tasks.
+- Demo access uses only the generated Demo ID and password. There is no email registration or password recovery, so keep your credentials.
+- This is a portfolio/demo service and availability is not guaranteed. Realtime connections may reconnect periodically.
+- Do not store sensitive, confidential or important information. See the privacy notice in the app for what TaskNet processes.
