@@ -51,6 +51,7 @@
         <link rel="icon" href="{{ asset('brand/tasknet-mark.svg') }}" type="image/svg+xml">
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <x-web-analytics />
     </head>
     <body class="min-h-screen bg-stone-50 font-sans text-stone-900 antialiased">
         <a href="#main-content" class="sr-only rounded-lg bg-white px-4 py-3 text-teal-700 focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-10 focus:outline-2 focus:outline-offset-4 focus:outline-teal-600">Skip to content</a>

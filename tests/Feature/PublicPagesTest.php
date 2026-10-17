@@ -265,3 +265,12 @@ test('external links open in a new tab and internal links do not', function () {
 
     expect($privacy)->not->toContain('target="_blank"');
 });
+
+test('Vercel Web Analytics loads only in production', function () {
+    $this->get(route('home'))->assertOk()->assertDontSee('_vercel/insights');
+
+    app()->detectEnvironment(fn () => 'production');
+
+    $this->get(route('home'))->assertOk()->assertSee('<script defer src="/_vercel/insights/script.js"></script>', false);
+    $this->get(route('login'))->assertOk()->assertSee('/_vercel/insights/script.js', false);
+});

@@ -8,6 +8,7 @@
         <title>{{ $title }} · TaskNet</title>
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <x-web-analytics />
     </head>
     <body class="min-h-screen bg-stone-50 font-sans text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100">
         <main class="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-12 sm:px-6">
