@@ -85,7 +85,7 @@
             </button>
         </div>
 
-        <ul data-project-rows class="flex flex-1 flex-col justify-around gap-4 text-sm">
+        <ul data-project-rows class="flex flex-1 flex-col justify-center gap-6 text-sm">
             @foreach ($visibleProjects as $project)
                 <li class="grid grid-cols-[minmax(0,9rem)_1fr_1.5rem] items-center gap-4 sm:grid-cols-[minmax(0,11rem)_1fr_1.5rem]">
                     <span class="truncate font-semibold" title="{{ $project->name }}">{{ $project->name }}</span>
