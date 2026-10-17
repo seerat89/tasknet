@@ -88,6 +88,11 @@ return [
             'driver' => 'pgsql',
             // DB_URL wins; otherwise use the pooled URL the Vercel Neon integration provides.
             'url' => env('DB_URL') ?: env('DB_DATABASE_URL'),
+            // Neon's pooled endpoint is PgBouncer in transaction mode, where PDO's server-side prepared
+            // statements break (its DEALLOCATE aborts the open transaction). Emulate prepares there.
+            'options' => str_contains((string) (env('DB_URL') ?: env('DB_DATABASE_URL')), '-pooler')
+                ? [PDO::ATTR_EMULATE_PREPARES => true]
+                : [],
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'laravel'),

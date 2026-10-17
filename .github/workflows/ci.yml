@@ -94,10 +94,9 @@ jobs:
       - name: Audit npm production dependencies
         run: npm audit --omit=dev --audit-level=high
 
-      # Build-tool findings do not ship to users, so they are reported without failing CI.
+      # Build-tool findings do not ship to users, so they are reported without failing CI or raising an error annotation.
       - name: Audit all npm dependencies (informational)
-        run: npm audit
-        continue-on-error: true
+        run: npm audit || true
 
   # Runs only for pushes to main, and only after the job above has passed. Vercel's production
   # Deployment Check requires this job, so a failed test or migration keeps the new build off the domain.
@@ -138,6 +137,18 @@ jobs:
             echo "The PROD_DATABASE_URL repository secret is not set." >&2
             exit 1
           fi
+
+          # Migrations need a direct session. Neon's pooled endpoint (PgBouncer, host contains "-pooler") breaks them.
+          case "$DB_URL" in
+            *-pooler*)
+              echo "PROD_DATABASE_URL is Neon's pooled connection. Use the unpooled (direct) connection string." >&2
+              exit 1
+              ;;
+          esac
+
+          # Fail early with a readable message if the database is unreachable, and show what is already there.
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -tA             -c "select 'Connected to PostgreSQL ' || current_setting('server_version') || ' as ' || current_user"             -c "select 'Existing tables in public: ' || count(*) from information_schema.tables where table_schema = 'public'"
+
           # The migration does not use the key; Laravel only needs one to boot.
           APP_KEY="$(php artisan key:generate --show)"
           export APP_KEY
