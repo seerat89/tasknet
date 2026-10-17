@@ -91,6 +91,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Scheduled Cleanup (Vercel Cron)
+    |--------------------------------------------------------------------------
+    |
+    | Vercel Cron sends this value as "Authorization: Bearer <secret>" when it calls /cron/cleanup.
+    | While it is unset, the endpoint rejects every request, so it can never run unauthenticated.
+    |
+    */
+
+    'cron' => [
+        'secret' => env('CRON_SECRET'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Realtime Connection (Browser)
     |--------------------------------------------------------------------------
     |

@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemoCredentialsController;
 use App\Http\Controllers\DemoWorkspaceController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ScheduledCleanupController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
+
+// Called by Vercel Cron with a bearer secret. It needs no session, cookies or CSRF, so the web group is skipped.
+Route::get('/cron/cleanup', ScheduledCleanupController::class)
+    ->withoutMiddleware('web')
+    ->name('cron.cleanup');
 
 Route::view('/about', 'about')->name('about');
 Route::view('/privacy', 'privacy')->name('privacy');

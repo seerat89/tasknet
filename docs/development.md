@@ -109,7 +109,9 @@ Access tokens last 1 day and refresh tokens 30 days. These values, and the 30-da
 - `tasknet:cleanup-demos` at 02:00 deletes expired demo workspaces.
 - `tasknet:cleanup-oauth` at 02:30 purges old OAuth records, then deletes stale dynamically registered clients (tracked in `mcp_dynamic_clients`) that are past the grace period and have no remaining tokens or authorization codes. It includes the Passport purge, so do not schedule `passport:purge` separately.
 
-Defining a schedule does not run it: production must invoke Laravel's scheduler, for example `php artisan schedule:run` every minute. Both commands are safe to rerun. Locally, use `php artisan schedule:list`, `schedule:run` or `schedule:work`.
+Defining a schedule does not run it: a deployment must invoke Laravel's scheduler, for example `php artisan schedule:run` every minute. Both commands are safe to rerun. Locally, use `php artisan schedule:list`, `schedule:run` or `schedule:work`.
+
+On Vercel there is no scheduler process. `vercel.json` has one cron, `0 2 * * *` (daily, UTC), that calls `GET /cron/cleanup`, which runs `tasknet:cleanup-demos` and then `tasknet:cleanup-oauth` through the same commands. The endpoint requires `Authorization: Bearer <CRON_SECRET>`, which Vercel sends automatically once the `CRON_SECRET` environment variable is set (use a random string of at least 16 characters); while it is unset every request is rejected. On the Hobby plan Vercel may run the job at any time between 02:00 and 02:59 UTC, and cron runs are not retried.
 
 ## Production image
 

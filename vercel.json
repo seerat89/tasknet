@@ -8,6 +8,9 @@
       "runtime": "container"
     }
   },
+  "crons": [
+    { "path": "/cron/cleanup", "schedule": "0 2 * * *" }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": { "service": "app" } }
   ]
