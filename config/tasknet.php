@@ -89,4 +89,22 @@ return [
 
     'database_provider' => env('TASKNET_DATABASE_PROVIDER'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Realtime Connection (Browser)
+    |--------------------------------------------------------------------------
+    |
+    | Where the browser reaches Reverb. These are read when a page is rendered, not baked into the
+    | JavaScript build, so a deployment can change them without rebuilding assets. A value left
+    | unset follows the page's own address, which is what production wants when the web server
+    | proxies WebSocket traffic to Reverb. Local development points them at the published port.
+    |
+    */
+
+    'realtime' => [
+        'host' => env('VITE_REVERB_HOST'),
+        'port' => env('VITE_REVERB_PORT'),
+        'scheme' => env('VITE_REVERB_SCHEME'),
+    ],
+
 ];

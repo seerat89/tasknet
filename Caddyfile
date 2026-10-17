@@ -3,8 +3,14 @@
 	root * /app/public
 	encode zstd gzip
 
-	php_server {
-		# Serve real files from public/, and send every other request to Laravel.
-		try_files {path} index.php
+	route {
+		# Browser WebSocket connections go to Reverb, which listens on loopback inside the container
+		# (see docker/vercel-start.sh). Reverb's HTTP API (/apps/*) is deliberately not proxied.
+		reverse_proxy /app/* 127.0.0.1:{$REVERB_SERVER_PORT:8080}
+
+		php_server {
+			# Serve real files from public/, and send every other request to Laravel.
+			try_files {path} index.php
+		}
 	}
 }

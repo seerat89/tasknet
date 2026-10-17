@@ -122,6 +122,12 @@ docker run --rm -p 8081:80 -e APP_KEY="$(docker run --rm tasknet-vercel php arti
 
 Open http://localhost:8081/up. Pages that use sessions also need the `DB_*` variables and a migrated database. On Vercel the Neon integration provides the pooled connection as `DB_DATABASE_URL`, which Laravel uses when `DB_URL` is not set. Neon's unpooled URL is for migrations and admin tasks only. The image contains no `.env`, OAuth keys or credentials, and it never runs migrations; configuration comes from environment variables and migrations are a separate release step. Supply the OAuth signing keys as `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY`.
 
+### Production realtime
+
+With `BROADCAST_CONNECTION=reverb`, `docker/vercel-start.sh` runs Reverb inside the same container, on loopback only. Caddy proxies browser WebSocket connections (`/app/*`) to it, and Laravel publishes events to it directly; Reverb's HTTP API is not reachable from outside. With any other value (the default is `null`) Reverb is not started and pages do not try to connect, so realtime is simply off.
+
+Vercel pins each WebSocket to one function instance, and a request that publishes an event can land on a different instance. Set `REVERB_SCALING_ENABLED=true` and `REDIS_URL` (a `rediss://` URL) so instances share events through Redis; without it, only browsers connected to the instance that handled the change are updated. Connections also end when the function's maximum duration is reached, and Echo reconnects on its own. The browser reads its connection settings when a page is rendered, not from `VITE_*` build variables, and defaults to the site's own address. Set `REVERB_ALLOWED_ORIGINS` to the site's host. A realtime outage never fails a saved change; the page just stops refreshing itself.
+
 ## Useful commands
 
 ```bash

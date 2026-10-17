@@ -2,21 +2,28 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
 const channelName = document.querySelector('meta[name="workspace-channel"]')?.content;
-const appKey = import.meta.env.VITE_REVERB_APP_KEY;
+
+// The server describes where Reverb is only when broadcasting is on, so with realtime off the page never tries to connect.
+// It is read at render time rather than from VITE_* build variables, which are fixed when the assets are built.
+let connection = null;
+
+try {
+    connection = JSON.parse(document.querySelector('meta[name="realtime-connection"]')?.content ?? 'null');
+} catch {
+    connection = null;
+}
 
 // Pages opt in with a workspace channel; forms and other pages never reload under the user.
-if (channelName && appKey) {
+if (channelName && connection?.key) {
     window.Pusher = Pusher;
-
-    const scheme = import.meta.env.VITE_REVERB_SCHEME ?? 'https';
 
     window.Echo = new Echo({
         broadcaster: 'reverb',
-        key: appKey,
-        wsHost: import.meta.env.VITE_REVERB_HOST,
-        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-        forceTLS: scheme === 'https',
+        key: connection.key,
+        wsHost: connection.host,
+        wsPort: connection.port,
+        wssPort: connection.port,
+        forceTLS: connection.scheme === 'https',
         enabledTransports: ['ws', 'wss'],
     });
 

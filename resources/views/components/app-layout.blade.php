@@ -34,6 +34,15 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         @if ($realtime && $user)
             <meta name="workspace-channel" content="workspace.{{ auth()->id() }}">
+            @if (config('broadcasting.default') === 'reverb')
+                @php($scheme = config('tasknet.realtime.scheme') ?: request()->getScheme())
+                <meta name="realtime-connection" content="{{ json_encode([
+                    'key' => config('reverb.apps.apps.0.key'),
+                    'host' => config('tasknet.realtime.host') ?: request()->getHost(),
+                    'port' => (int) (config('tasknet.realtime.port') ?: ($scheme === 'https' ? 443 : 80)),
+                    'scheme' => $scheme,
+                ]) }}">
+            @endif
         @endif
         @if ($description)
             <meta name="description" content="{{ $description }}">

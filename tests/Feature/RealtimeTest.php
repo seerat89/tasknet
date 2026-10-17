@@ -217,3 +217,23 @@ test('realtime pages do not expose the internal email', function () {
         ->assertDontSee($this->user->email)
         ->assertDontSee('tasknet.local');
 });
+
+test('pages describe the Reverb connection at render time only when broadcasting is on', function () {
+    $this->actingAs($this->user)->get(route('dashboard'))->assertOk()->assertDontSee('realtime-connection');
+
+    config([
+        'broadcasting.default' => 'reverb',
+        'reverb.apps.apps.0.key' => 'public-key',
+        'tasknet.realtime' => ['host' => null, 'port' => null, 'scheme' => null],
+    ]);
+
+    // Unset values follow the page's own address, as they do behind the production proxy.
+    $this->actingAs($this->user)->get('https://tasknet.test/dashboard')->assertOk()
+        ->assertSee(e(json_encode(['key' => 'public-key', 'host' => 'tasknet.test', 'port' => 443, 'scheme' => 'https'])), false);
+
+    config(['tasknet.realtime' => ['host' => 'localhost', 'port' => '8080', 'scheme' => 'http']]);
+
+    $this->actingAs($this->user)->get(route('dashboard'))->assertOk()
+        ->assertSee(e(json_encode(['key' => 'public-key', 'host' => 'localhost', 'port' => 8080, 'scheme' => 'http'])), false)
+        ->assertDontSee('secret');
+});
