@@ -1,0 +1,77 @@
+# Production image for Vercel (container-backed Function): FrankenPHP serving Laravel through Caddy.
+# Local development uses ./Dockerfile and compose.yaml instead.
+#
+# Configuration and secrets come from Vercel environment variables at runtime; nothing environment-specific
+# is baked into the image. Migrations are run as a separate release step, never at startup.
+
+# Frontend assets: Vite + Tailwind. Node is not part of the runtime image.
+FROM node:24-alpine AS assets
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+
+# PHP base shared by the build and runtime stages, with the extensions TaskNet needs.
+FROM dunglas/frankenphp:1-php8.5-bookworm AS base
+
+RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+    && install-php-extensions bcmath intl opcache pdo_pgsql zip
+
+# Fail the build clearly if an extension TaskNet needs is unavailable.
+RUN php -r '$missing = array_filter(["bcmath", "intl", "mbstring", "openssl", "pdo_pgsql", "sodium", "zip"], fn ($extension) => ! extension_loaded($extension)); if ($missing) { fwrite(STDERR, "Missing required PHP extensions: ".implode(", ", $missing).PHP_EOL); exit(1); }'
+
+WORKDIR /app
+
+
+# Production Composer dependencies and the application code.
+FROM base AS dependencies
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+COPY composer.json composer.lock ./
+RUN composer install \
+        --no-dev \
+        --no-interaction \
+        --no-progress \
+        --no-scripts \
+        --optimize-autoloader \
+        --prefer-dist
+
+COPY . .
+COPY --from=assets /app/public/build public/build
+
+# Rebuilds the autoloader and runs package discovery for the production packages only.
+# `php artisan optimize` is deliberately not run: it would freeze build-time environment values.
+RUN mkdir -p \
+        storage/framework/cache \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        bootstrap/cache \
+    && composer dump-autoload --no-dev --classmap-authoritative \
+    && php artisan event:cache \
+    && php artisan view:cache
+
+
+FROM base AS runtime
+
+COPY --from=dependencies --chown=www-data:www-data /app /app
+COPY --chown=www-data:www-data Caddyfile /etc/frankenphp/Caddyfile
+
+RUN setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/frankenphp \
+    && chown -R www-data:www-data /config/caddy /data/caddy
+
+# Safe defaults only. Everything else, including the database, sessions and OAuth keys, is supplied at runtime.
+ENV PORT=80 \
+    APP_ENV=production \
+    APP_DEBUG=false \
+    LOG_CHANNEL=stderr
+
+USER www-data
+
+CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]

@@ -111,6 +111,17 @@ Access tokens last 1 day and refresh tokens 30 days. These values, and the 30-da
 
 Defining a schedule does not run it: production must invoke Laravel's scheduler, for example `php artisan schedule:run` every minute. Both commands are safe to rerun. Locally, use `php artisan schedule:list`, `schedule:run` or `schedule:work`.
 
+## Production image
+
+`Dockerfile.vercel`, `Caddyfile` and `vercel.json` describe the container Vercel runs (FrankenPHP on PHP 8.5, Caddy serving `public/`). Local development does not use them. To try the production image locally:
+
+```bash
+docker build -f Dockerfile.vercel -t tasknet-vercel .
+docker run --rm -p 8081:80 -e APP_KEY="$(docker run --rm tasknet-vercel php artisan key:generate --show)" tasknet-vercel
+```
+
+Open http://localhost:8081/up. Pages that use sessions also need the `DB_*` variables and a migrated database. The image contains no `.env`, OAuth keys or credentials, and it never runs migrations; configuration comes from environment variables and migrations are a separate release step. Supply the OAuth signing keys as `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY`.
+
 ## Useful commands
 
 ```bash

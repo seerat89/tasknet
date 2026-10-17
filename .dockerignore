@@ -8,3 +8,16 @@ storage/logs
 storage/framework
 public/build
 public/hot
+.github
+.claude
+.agents
+.idea
+.vscode
+tests
+docs
+storage/*.key
+storage/pail
+database/*.sqlite*
+public/storage
+.phpunit.cache
+.phpunit.result.cache

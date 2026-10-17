@@ -1,0 +1,10 @@
+# Production web server for the Vercel container (FrankenPHP). Only /app/public is web-accessible.
+:{$PORT:80} {
+	root * /app/public
+	encode zstd gzip
+
+	php_server {
+		# Serve real files from public/, and send every other request to Laravel.
+		try_files {path} index.php
+	}
+}

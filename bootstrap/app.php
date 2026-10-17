@@ -16,6 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withBroadcasting(__DIR__.'/../routes/channels.php', ['middleware' => ['web', 'auth']])
     ->withMiddleware(function (Middleware $middleware): void {
+        // The app runs behind a TLS-terminating proxy (Vercel) whose addresses are not fixed, so every
+        // proxy is trusted and its forwarded scheme, host, port and client headers are honored. This is
+        // safe because the container is reachable only through that proxy. Requests without forwarded
+        // headers (local Docker) behave as before.
+        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_FOR
+            | Request::HEADER_X_FORWARDED_HOST
+            | Request::HEADER_X_FORWARDED_PORT
+            | Request::HEADER_X_FORWARDED_PROTO);
+
         $middleware->append(AddSecurityHeaders::class);
 
         $middleware->web(append: [
