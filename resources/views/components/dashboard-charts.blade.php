@@ -65,6 +65,10 @@
                 </li>
             @endforeach
         </ul>
+
+        @if ($total === 0)
+            <p class="text-center text-sm text-stone-500">No tasks yet. The status breakdown appears once you add tasks.</p>
+        @endif
     </section>
 
     <section aria-labelledby="project-chart-heading" data-project-chart class="flex flex-col gap-5 rounded-2xl border border-stone-200 bg-white p-6">
@@ -94,6 +98,10 @@
         </ul>
 
         <p data-project-empty hidden role="status" class="text-sm text-stone-500">No matching projects</p>
+
+        @if ($total === 0)
+            <p class="text-sm text-stone-500">{{ $projects->isEmpty() ? 'No projects yet.' : 'No tasks yet. Bars appear once your projects have tasks.' }}</p>
+        @endif
 
         <template data-project-row>
             <li class="grid grid-cols-[minmax(0,9rem)_1fr_1.5rem] items-center gap-4 sm:grid-cols-[minmax(0,11rem)_1fr_1.5rem]">

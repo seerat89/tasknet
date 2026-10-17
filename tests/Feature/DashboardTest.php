@@ -153,15 +153,24 @@ test('the dashboard charts task status and tasks per project from the workspace 
         ->assertSeeInOrder(['Tasks by project', 'Big project', 'Small project']);
 });
 
-test('the dashboard charts do not include other workspaces and are hidden without tasks', function () {
+test('the dashboard charts do not include other workspaces and still render with empty states without tasks', function () {
     $other = Project::factory()->for(User::factory()->demo()->create())->create(['name' => 'Elsewhere']);
     Task::factory()->for($other)->create();
-    Project::factory()->for($this->user)->create();
+    Project::factory()->for($this->user)->create(['name' => 'Mine']);
 
     $this->actingAs($this->user)->get(route('dashboard'))
-        ->assertDontSee('Task status')
-        ->assertDontSee('Tasks by project')
+        ->assertSee('Task status')
+        ->assertSee('Tasks by project')
+        ->assertSee('No tasks yet. The status breakdown appears once you add tasks.')
+        ->assertSee('No tasks yet. Bars appear once your projects have tasks.')
         ->assertDontSee('Elsewhere');
+});
+
+test('the dashboard charts render with an empty state in a workspace without projects', function () {
+    $this->actingAs($this->user)->get(route('dashboard'))
+        ->assertSee('Task status')
+        ->assertSee('Tasks by project')
+        ->assertSee('No projects yet.');
 });
 
 test('the summary cards show the remaining capacity and never go below zero', function () {

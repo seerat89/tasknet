@@ -30,9 +30,7 @@
         @endforeach
     </dl>
 
-    @if ($taskCount > 0)
-        <x-dashboard-charts :status-counts="$statusCounts" :projects="$chartProjects" :project-count="$projectCount" />
-    @endif
+    <x-dashboard-charts :status-counts="$statusCounts" :projects="$chartProjects" :project-count="$projectCount" />
 
     @if ($projectCount >= $projectLimit)
         <p class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">This demo workspace has reached its limit of {{ $projectLimit }} projects. Delete a project to create another.</p>
