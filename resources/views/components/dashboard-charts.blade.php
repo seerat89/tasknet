@@ -54,9 +54,10 @@
             </div>
         </div>
 
-        <ul class="grid grid-cols-3 gap-3">
+        {{-- A row per status on phones, where three narrow cards would wrap the labels; three cards from sm up. --}}
+        <ul class="grid gap-2 sm:grid-cols-3 sm:gap-3">
             @foreach ($segments as $segment)
-                <li class="flex flex-col gap-1 rounded-xl bg-stone-50 px-3 py-2.5">
+                <li class="flex items-center justify-between gap-3 rounded-xl bg-stone-50 px-3 py-2.5 sm:flex-col sm:items-start sm:justify-start sm:gap-1">
                     <span class="flex items-center gap-2 text-sm text-stone-600">
                         <span aria-hidden="true" class="size-2.5 shrink-0 rounded-full {{ $segment['dot'] }}"></span>
                         {{ $segment['label'] }}

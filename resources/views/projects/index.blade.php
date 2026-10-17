@@ -18,11 +18,14 @@
             </div>
             <div class="flex flex-col gap-1">
                 <label for="sort" class="text-sm font-medium text-stone-700">Sort by</label>
-                <select id="sort" name="sort" class="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
-                    <option value="updated" @selected($sort === 'updated')>Recently updated</option>
-                    <option value="name" @selected($sort === 'name')>Name</option>
-                    <option value="tasks" @selected($sort === 'tasks')>Most tasks</option>
-                </select>
+                <div class="relative">
+                    <select id="sort" name="sort" class="w-full appearance-none rounded-lg border border-stone-300 bg-white py-2.5 pr-10 pl-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
+                        <option value="updated" @selected($sort === 'updated')>Recently updated</option>
+                        <option value="name" @selected($sort === 'name')>Name</option>
+                        <option value="tasks" @selected($sort === 'tasks')>Most tasks</option>
+                    </select>
+                    <svg aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="pointer-events-none absolute inset-y-0 right-3 my-auto size-4 text-stone-500"><path d="m4 6 4 4 4-4" /></svg>
+                </div>
             </div>
             <noscript><button type="submit" class="rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">Search</button></noscript>
         </form>
