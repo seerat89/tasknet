@@ -25,7 +25,7 @@
             <div class="flex flex-col gap-2 rounded-2xl border border-stone-200 bg-white p-5">
                 <dt class="text-sm text-stone-600">{{ $stat['label'] }}</dt>
                 <dd class="text-3xl font-bold tracking-tight">{{ $stat['value'] }}</dd>
-                <dd class="text-xs text-stone-500">{{ $stat['note'] }}</dd>
+                <dd class="text-sm text-stone-600">{{ $stat['note'] }}</dd>
             </div>
         @endforeach
     </dl>
@@ -54,11 +54,11 @@
             @foreach ($recentProjects as $project)
                 <li>
                     <a href="{{ route('projects.show', $project) }}" class="flex h-full flex-col gap-3 rounded-xl border border-stone-200 bg-white p-5 transition-colors hover:border-teal-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600">
-                        <h2 class="text-base font-semibold">{{ $project->name }}</h2>
+                        <h2 class="line-clamp-1 text-base font-semibold" title="{{ $project->name }}">{{ $project->name }}</h2>
                         @if ($project->description)
                             <p class="line-clamp-2 text-sm leading-6 text-stone-600">{{ $project->description }}</p>
                         @endif
-                        <p class="mt-auto text-xs text-stone-500">
+                        <p class="mt-auto text-[0.8125rem] text-stone-600">
                             {{ $project->tasks_count }} {{ Str::plural('task', $project->tasks_count) }}
                             · {{ $project->completed_tasks_count }} completed
                             · Updated {{ $project->updated_at->format('M j, Y') }}
