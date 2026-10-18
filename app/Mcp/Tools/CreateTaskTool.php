@@ -26,7 +26,7 @@ class CreateTaskTool extends Tool
 
     protected string $title = 'Create task';
 
-    protected string $description = 'Create a task in one of your projects. A workspace can hold at most 100 tasks in total. Status defaults to todo and priority to medium.';
+    protected string $description = 'Create a task in one of your projects. A workspace can hold at most 100 tasks in total. Set status, priority and due_date here when you know them, instead of updating the task afterwards. Status defaults to todo and priority to medium.';
 
     /**
      * Get the tool's input schema.
