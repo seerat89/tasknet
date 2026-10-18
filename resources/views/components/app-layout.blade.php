@@ -48,7 +48,7 @@
             <meta name="description" content="{{ $description }}">
         @endif
         <title>{{ $title }} · TaskNet</title>
-        <link rel="icon" href="{{ asset('brand/tasknet-mark.svg') }}" type="image/svg+xml">
+        <x-favicons />
         @fonts
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <x-web-analytics />

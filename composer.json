@@ -10,7 +10,6 @@
         "ai-agents"
     ],
     "homepage": "https://github.com/seerat89/tasknet",
-    "license": "MIT",
     "require": {
         "php": "^8.3",
         "guzzlehttp/guzzle": "^7.9",

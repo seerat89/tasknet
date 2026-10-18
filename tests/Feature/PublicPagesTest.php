@@ -48,7 +48,7 @@ test('about explains TaskNet without legal disclaimers and links to the terms', 
         ->assertSee('TaskNet explores how AI agents can work with a web application')
         ->assertSee('Shared application rules')
         ->assertSee('OAuth approval')
-        ->assertSee('Projects &amp; Tasks', false)
+        ->assertSee('Reverb + Redis')
         ->assertSee('Testing locally?')
         ->assertSee('ngrok')
         ->assertSee('Cloudflare Tunnel')
@@ -258,6 +258,7 @@ test('external links open in a new tab and internal links do not', function () {
 
     expect($about)
         ->toMatch('#<a target="_blank" rel="noopener noreferrer" href="https://github\.com/seerat89/tasknet"#')
+        ->toMatch('#Built by Seerat Amini · <a target="_blank" rel="noopener noreferrer" href="https://seerat\.me"#')
         ->toContain('(opens in a new tab)')
         ->not->toMatch('#<a [^>]*href="'.preg_quote(route('privacy'), '#').'"[^>]*target=#');
 
@@ -273,4 +274,37 @@ test('Vercel Web Analytics loads only in production', function () {
 
     $this->get(route('home'))->assertOk()->assertSee('<script defer src="/_vercel/insights/script.js"></script>', false);
     $this->get(route('login'))->assertOk()->assertSee('/_vercel/insights/script.js', false);
+});
+
+test('every layout declares the TaskNet favicon package and the files exist', function () {
+    $links = [
+        '<link rel="icon" href="/favicon.ico" sizes="any">',
+        '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">',
+        '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">',
+        '<link rel="apple-touch-icon" href="/apple-touch-icon.png">',
+        '<link rel="manifest" href="/site.webmanifest">',
+    ];
+
+    // app-layout (home, signed-out and signed-in pages) and auth-layout (login).
+    foreach ([route('home'), route('login')] as $url) {
+        foreach ($links as $link) {
+            $this->get($url)->assertOk()->assertSee($link, false);
+        }
+    }
+
+    foreach (['favicon.ico', 'favicon-16x16.png', 'favicon-32x32.png', 'favicon-48x48.png', 'favicon-64x64.png', 'apple-touch-icon.png', 'android-chrome-192x192.png', 'android-chrome-512x512.png', 'site.webmanifest'] as $file) {
+        expect(filesize(public_path($file)))->toBeGreaterThan(0, "{$file} is empty");
+    }
+
+    $manifest = json_decode(file_get_contents(public_path('site.webmanifest')), true);
+
+    expect($manifest['name'])->toBe('TaskNet')
+        ->and(collect($manifest['icons'])->pluck('src')->all())->toBe(['/android-chrome-192x192.png', '/android-chrome-512x512.png']);
+});
+
+test('the About page and README share one architecture diagram', function () {
+    $this->get(route('about'))->assertOk()->assertSee(asset('brand/architecture.svg'), false);
+
+    expect(filesize(public_path('brand/architecture.svg')))->toBeGreaterThan(0)
+        ->and(file_get_contents(base_path('README.md')))->toContain('(public/brand/architecture.svg)');
 });

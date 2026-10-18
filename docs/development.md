@@ -2,12 +2,9 @@
 
 ## Requirements
 
-- Docker with the Compose plugin
-- Git
+Docker with the Compose plugin, and Git. PHP, PostgreSQL and Node run in containers, so nothing else needs to be installed. Keep the repository on your normal filesystem.
 
-PHP, PostgreSQL and Node run in containers, so nothing else needs to be installed. Keep the repository on your normal filesystem.
-
-## Start the application
+## Setup and run
 
 ```bash
 git clone https://github.com/seerat89/tasknet.git
@@ -16,61 +13,53 @@ cp .env.example .env        # PowerShell: Copy-Item .env.example .env
 docker compose up -d --build
 ```
 
-Open http://localhost:8000. The first start takes a minute or two; follow it with `docker compose logs -f`.
+Open http://localhost:8000. The first start takes a minute or two (`docker compose logs -f`). On startup the `app` container installs Composer dependencies, generates `APP_KEY` and the OAuth keys if missing, runs migrations and serves the app. The `node` container installs npm packages and starts Vite.
 
-On startup the `app` container installs Composer dependencies if needed, generates `APP_KEY` if it is empty, runs migrations and serves the app. The `node` container installs npm packages if needed and starts Vite.
+| Service    | Purpose                   | Port                                        |
+|------------|---------------------------|---------------------------------------------|
+| `app`      | PHP 8.5, `artisan serve`  | 8000                                        |
+| `postgres` | PostgreSQL 18             | 5434 on the host, `postgres:5432` in Docker |
+| `node`     | Node 24, Vite dev server  | 5173                                        |
+| `reverb`   | Laravel Reverb WebSockets | 8080                                        |
 
-## Services
-
-| Service    | Purpose                    | Port                                         |
-|------------|----------------------------|----------------------------------------------|
-| `app`      | PHP 8.5, `artisan serve`   | 8000                                         |
-| `postgres` | PostgreSQL 18              | 5434 on the host, `postgres:5432` in Docker  |
-| `node`     | Node 24, Vite dev server   | 5173                                         |
-| `reverb`   | Laravel Reverb WebSockets  | 8080                                         |
-
-`vendor/` and `node_modules/` live in Docker volumes, so the folders in your checkout stay empty or stale. Run Composer, npm and tests through the containers.
-
-## Database
-
-Migrations run automatically on startup; run them manually with `docker compose exec app php artisan migrate`.
-
-To inspect the database with DBeaver, pgAdmin or similar, connect to host `localhost`, port `5434`, database `tasknet`, user `tasknet_app`, and the `DB_PASSWORD` from your `.env`. That password is for local development only.
-
-TaskNet does not persist IP addresses or User-Agent strings in application session records.
-
-## Tests and formatting
+`vendor/` and `node_modules/` live in Docker volumes, so run Composer, npm and Artisan through the containers:
 
 ```bash
-docker compose exec app php artisan test       # Pest; in-memory SQLite, never touches the dev database
-docker compose exec app ./vendor/bin/pint      # format (add --test to only check)
-docker compose exec node npm run build         # production frontend build
+docker compose exec app php artisan <command>
+docker compose exec app composer <command>
+docker compose exec node npm <command>
+docker compose down        # stop; add -v to also delete the database and dependency volumes
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) runs the same checks with the tests on PostgreSQL. To run the suite against PostgreSQL locally, create a scratch database and run `docker compose exec -e DB_CONNECTION=pgsql -e DB_DATABASE=<scratch db> app php artisan test`.
+To inspect the database, connect to `localhost:5434`, database `tasknet`, user `tasknet_app`, with `DB_PASSWORD` from your `.env` (a local-only password).
 
-## Realtime updates
+## Tests and checks
 
-Dashboard and project pages update when a project or task changes, whether through the web UI or MCP:
+```bash
+docker compose exec app php artisan test     # Pest, in-memory SQLite; never touches the dev database
+docker compose exec app ./vendor/bin/pint    # format (add --test to only check)
+docker compose exec node npm run build       # production frontend build
+```
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the same checks with the tests on PostgreSQL, plus dependency audits. To run the suite on PostgreSQL locally, create a scratch database and run `docker compose exec -e DB_CONNECTION=pgsql -e DB_DATABASE=<scratch db> app php artisan test`.
+
+## Realtime
+
+Dashboard and project pages reload when a project or task changes, from the web UI or MCP:
 
 ```
-action → ProjectChanged / TaskChanged event → Reverb → Echo in the browser → debounced reload
+action → ProjectChanged / TaskChanged → Reverb → Echo in the browser → debounced reload
 ```
 
-Events are sent immediately (no queue worker). Each workspace has one private channel, `workspace.{id}`, and the payload only says what kind of change happened. The browser reaches Reverb at `localhost:8080`; the containers reach it as `reverb:8080`. Both are configured in `.env.example` (`REVERB_*`, `VITE_REVERB_*`). If your `.env` predates realtime, copy those lines over and run `docker compose up -d` and `docker compose restart node`.
+Events are broadcast immediately, so no queue worker is needed. Each workspace has one private channel, `workspace.{id}`, and the payload only says what kind of change happened. The containers reach Reverb as `reverb:8080`; the browser reaches it at the host and port given by `VITE_REVERB_HOST`, `VITE_REVERB_PORT` and `VITE_REVERB_SCHEME`, which are read when a page is rendered (not at build time). If your `.env` predates realtime, copy the `REVERB_*` and `VITE_REVERB_*` lines from `.env.example` and run `docker compose up -d`.
 
-## MCP development
+## MCP
 
-The MCP server is at http://localhost:8000/mcp. Clients authenticate with OAuth through Laravel Passport:
+The MCP server is at http://localhost:8000/mcp and authenticates with OAuth through Laravel Passport: the client registers at `POST /oauth/register` as a public client, the user signs in with a Demo ID and approves at `/oauth/authorize` (authorization code with PKCE, scope `mcp:use`), and the client exchanges the code at `/oauth/token` for access and refresh tokens.
 
-1. `/mcp` answers `401` with a `WWW-Authenticate` header pointing at the OAuth metadata.
-2. The client registers itself at `POST /oauth/register` as a public client.
-3. The user signs in with a Demo ID and approves the connection at `/oauth/authorize` (authorization code with PKCE, scope `mcp:use`).
-4. The client exchanges the code at `/oauth/token` for an access token and a refresh token.
+The eight tools (`list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task`, `update_task`) run as the authorized user through the same actions, policies and limits as the web UI. There are no delete tools.
 
-Tools: `list_projects`, `get_project`, `create_project`, `update_project`, `list_tasks`, `get_task`, `create_task` and `update_task`, all advertised directly. They run as the authorized user through the same actions, policies and limits as the web UI. There are no delete tools.
-
-OAuth signing keys are created in `storage/oauth-*.key` on first start and are git-ignored. For hosted environments, set `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY` instead.
+OAuth signing keys are created in `storage/oauth-*.key` on first start and are git-ignored. Token and client lifetimes are set under `mcp.oauth` in `config/tasknet.php`.
 
 ### MCP Inspector
 
@@ -78,7 +67,7 @@ OAuth signing keys are created in `storage/oauth-*.key` on first start and are g
 npx @modelcontextprotocol/inspector --server-url http://localhost:8000/mcp --transport http
 ```
 
-Connect, sign in with a demo workspace's Demo ID when redirected, and approve. The eight tools appear on the Tools tab; pick one, enter its arguments and run it.
+Connect, sign in with a demo workspace's Demo ID when redirected, and approve. The eight tools appear on the Tools tab.
 
 ### Remote AI clients (tunnels)
 
@@ -86,57 +75,33 @@ Browser-based and cloud AI clients cannot reach `localhost`. Expose port 8000 wi
 
 1. Set `APP_URL` in `.env` to the tunnel's `https://` address and run `docker compose restart app`.
 2. Add the client's callback origin to `MCP_REDIRECT_DOMAINS` (comma-separated, keep the localhost entries) and restart the app. Clients that use a custom URL scheme need it added to `custom_schemes` in `config/mcp.php`.
-3. Check `curl -i <tunnel>/mcp` returns `401` and `curl <tunnel>/.well-known/oauth-authorization-server` returns URLs starting with `https://`.
+3. Check that `curl -i <tunnel>/mcp` returns `401` and `curl <tunnel>/.well-known/oauth-authorization-server` returns `https://` URLs.
 4. Use `<tunnel>/mcp` as the server URL in the client.
 
-Troubleshooting:
+Troubleshooting: `invalid_redirect_uri` means the callback origin is missing from `MCP_REDIRECT_DOMAINS`; `429` is the per-workspace rate limit (`MCP_RATE_LIMIT`); `403` on `/mcp` means the workspace expired or the token lacks the `mcp:use` scope.
 
-- `invalid_redirect_uri` on registration: the callback origin is missing from `MCP_REDIRECT_DOMAINS`.
-- `http://` URLs in the OAuth metadata: trusted proxies are not configured, so HTTPS may not be detected behind a tunnel.
-- `429`: the per-workspace MCP rate limit (`MCP_RATE_LIMIT`) was reached.
-- `403` on `/mcp`: the workspace expired or the token lacks the `mcp:use` scope.
-
-A tunnel exposes your local instance to anyone with the address. Set `APP_DEBUG=false`, use throwaway data, and stop the tunnel afterwards, then set `APP_URL` back to `http://localhost:8000`. MCP support for custom servers varies by client and plan.
-
-### OAuth lifetimes
-
-Access tokens last 1 day and refresh tokens 30 days. These values, and the 30-day grace period for unused clients, are set under `mcp.oauth` in `config/tasknet.php`. Expired access-token rows are kept until the refresh token's lifetime has passed, because the refresh token only identifies its workspace and client through that row.
+A tunnel exposes your local instance to anyone with the address. Use throwaway data, stop the tunnel afterwards, and set `APP_URL` back to `http://localhost:8000`.
 
 ## Scheduled cleanup
 
-`routes/console.php` schedules two daily jobs in the application timezone (UTC):
+`routes/console.php` schedules two daily jobs (UTC): `tasknet:cleanup-demos` at 02:00 deletes expired demo workspaces, and `tasknet:cleanup-oauth` at 02:30 purges old OAuth records and stale dynamically registered clients. The OAuth cleanup includes the Passport purge, so do not schedule `passport:purge` separately. Both are safe to rerun.
 
-- `tasknet:cleanup-demos` at 02:00 deletes expired demo workspaces.
-- `tasknet:cleanup-oauth` at 02:30 purges old OAuth records, then deletes stale dynamically registered clients (tracked in `mcp_dynamic_clients`) that are past the grace period and have no remaining tokens or authorization codes. It includes the Passport purge, so do not schedule `passport:purge` separately.
-
-Defining a schedule does not run it: a deployment must invoke Laravel's scheduler, for example `php artisan schedule:run` every minute. Both commands are safe to rerun. Locally, use `php artisan schedule:list`, `schedule:run` or `schedule:work`.
-
-On Vercel there is no scheduler process. `vercel.json` has one cron, `0 2 * * *` (daily, UTC), that calls `GET /cron/cleanup`, which runs `tasknet:cleanup-demos` and then `tasknet:cleanup-oauth` through the same commands. The endpoint requires `Authorization: Bearer <CRON_SECRET>`, which Vercel sends automatically once the `CRON_SECRET` environment variable is set (use a random string of at least 16 characters); while it is unset every request is rejected. On the Hobby plan Vercel may run the job at any time between 02:00 and 02:59 UTC, and cron runs are not retried.
+Locally, use `php artisan schedule:list`, `schedule:run` or `schedule:work`. In production there is no scheduler process: Vercel Cron calls `GET /cron/cleanup` daily at 02:00 UTC, which runs both commands in that order. It requires `Authorization: Bearer <CRON_SECRET>` (Vercel sends it once `CRON_SECRET` is set) and rejects every request while the secret is unset.
 
 ## Production image
 
-`Dockerfile.vercel`, `Caddyfile` and `vercel.json` describe the container Vercel runs (FrankenPHP on PHP 8.5, Caddy serving `public/`). Local development does not use them. To try the production image locally:
+`Dockerfile.vercel`, `Caddyfile`, `docker/vercel-start.sh` and `vercel.json` describe the container Vercel runs (FrankenPHP on PHP 8.5). Local development does not use them. To try the image locally:
 
 ```bash
 docker build -f Dockerfile.vercel -t tasknet-vercel .
 docker run --rm -p 8081:80 -e APP_KEY="$(docker run --rm tasknet-vercel php artisan key:generate --show)" tasknet-vercel
 ```
 
-Open http://localhost:8081/up. Pages that use sessions also need the `DB_*` variables and a migrated database. On Vercel the Neon integration provides the pooled connection as `DB_DATABASE_URL`, which Laravel uses when `DB_URL` is not set. Neon's unpooled URL is for migrations and admin tasks only. The image contains no `.env`, OAuth keys or credentials, and it never runs migrations; configuration comes from environment variables and migrations are a separate release step. Supply the OAuth signing keys as `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY`.
+Open http://localhost:8081/up. Pages that use sessions also need the `DB_*` variables and a migrated database. The image contains no `.env`, keys or credentials and never runs migrations.
 
-### Production realtime
+Configuration comes from environment variables:
 
-With `BROADCAST_CONNECTION=reverb`, `docker/vercel-start.sh` runs Reverb inside the same container, on loopback only. Caddy proxies browser WebSocket connections (`/app/*`) to it, and Laravel publishes events to it directly; Reverb's HTTP API is not reachable from outside. With any other value (the default is `null`) Reverb is not started and pages do not try to connect, so realtime is simply off.
-
-Vercel pins each WebSocket to one function instance, and a request that publishes an event can land on a different instance. Set `REVERB_SCALING_ENABLED=true` and `REDIS_URL` (a `rediss://` URL) so instances share events through Redis; without it, only browsers connected to the instance that handled the change are updated. Connections also end when the function's maximum duration is reached, and Echo reconnects on its own. The browser reads its connection settings when a page is rendered, not from `VITE_*` build variables, and defaults to the site's own address. Set `REVERB_ALLOWED_ORIGINS` to the site's host. A realtime outage never fails a saved change; the page just stops refreshing itself.
-
-## Useful commands
-
-```bash
-docker compose exec app php artisan <command>   # Artisan
-docker compose exec app composer <command>      # Composer
-docker compose exec node npm <command>          # npm
-docker compose logs -f                          # follow logs
-docker compose down                             # stop; data is kept
-docker compose down -v                          # also delete the database and dependency volumes
-```
+- **Database:** the Neon integration's pooled connection as `DB_DATABASE_URL` (used when `DB_URL` is unset). The unpooled URL is only for migrations, which CI runs as the `PROD_DATABASE_URL` secret after the tests pass on `main`.
+- **OAuth keys:** `PASSPORT_PRIVATE_KEY` and `PASSPORT_PUBLIC_KEY`.
+- **Realtime:** with `BROADCAST_CONNECTION=reverb` the container also runs Reverb on loopback, and Caddy proxies `/app/*` to it. Set `REVERB_APP_ID`, `REVERB_APP_KEY`, `REVERB_APP_SECRET` and `REVERB_ALLOWED_ORIGINS`, and leave `VITE_REVERB_*` unset so the browser connects to the site's own address. Vercel pins each WebSocket to one instance, so also set `REVERB_SCALING_ENABLED=true` and a `rediss://` `REDIS_URL` for cross-instance delivery. With any other broadcast value, Reverb does not start and realtime is simply off.
+- **Cleanup cron:** `CRON_SECRET`.

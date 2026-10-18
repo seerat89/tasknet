@@ -18,29 +18,10 @@
 
         <figure>
             <div class="rounded-xl border border-stone-200 bg-white p-4 sm:p-6">
-                <svg viewBox="0 0 1000 248" role="img" aria-labelledby="diagram-title diagram-desc" class="hidden h-auto w-full font-sans lg:block">
-                    <title id="diagram-title">How the browser and MCP reach the same workspace</title>
-                    <desc id="diagram-desc">Two paths lead to the same workspace. In the browser, a user works through the TaskNet UI. With an AI client, the client is approved through OAuth and connects through MCP. Both paths pass through the same shared application rules before reaching Projects and Tasks.</desc>
-                    <defs><marker id="arrow-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1.5 9 5 1 8.5" fill="none" stroke="#78716c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></marker></defs>
-                    <text x="0" y="24" fill="#78716c" font-size="14" font-weight="600">Using the browser</text>
-                    <text x="0" y="164" fill="#78716c" font-size="14" font-weight="600">Using an AI client</text>
-                    <rect x="0" y="44" width="140" height="52" rx="10" fill="#ffffff" stroke="#d6d3d1" stroke-width="1.25" /><text x="70" y="70" text-anchor="middle" dominant-baseline="central" fill="#292524" font-size="14" font-weight="500">User</text>
-                    <rect x="190" y="44" width="160" height="52" rx="10" fill="#ffffff" stroke="#d6d3d1" stroke-width="1.25" /><text x="270" y="70" text-anchor="middle" dominant-baseline="central" fill="#292524" font-size="14" font-weight="500">TaskNet UI</text>
-                    <rect x="0" y="184" width="140" height="52" rx="10" fill="#ffffff" stroke="#d6d3d1" stroke-width="1.25" /><text x="70" y="210" text-anchor="middle" dominant-baseline="central" fill="#292524" font-size="14" font-weight="500">AI client</text>
-                    <rect x="190" y="184" width="160" height="52" rx="10" fill="#ffffff" stroke="#d6d3d1" stroke-width="1.25" /><text x="270" y="210" text-anchor="middle" dominant-baseline="central" fill="#292524" font-size="14" font-weight="500">OAuth approval</text>
-                    <rect x="400" y="184" width="120" height="52" rx="10" fill="#ffffff" stroke="#d6d3d1" stroke-width="1.25" /><text x="460" y="210" text-anchor="middle" dominant-baseline="central" fill="#292524" font-size="14" font-weight="500">MCP</text>
-                    <path d="M140 70H188" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-h)" />
-                    <path d="M140 210H188" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-h)" />
-                    <path d="M350 210H398" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-h)" />
-                    <path d="M350 70H500C556 70 546 120 597 120" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-h)" />
-                    <path d="M520 210H540C576 210 566 160 597 160" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-h)" />
-                    <rect x="600" y="95" width="200" height="90" rx="12" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5" /><text x="700" y="125" text-anchor="middle" dominant-baseline="central" fill="#134e4a" font-size="15" font-weight="600">Shared application rules</text><text x="700" y="150" text-anchor="middle" dominant-baseline="central" fill="#0f766e" font-size="12">Validation · policies · limits</text>
-                    <path d="M800 140H857" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-h)" />
-                    <rect x="860" y="105" width="140" height="70" rx="12" fill="#ffffff" stroke="#1c1917" stroke-width="1.5" /><text x="930" y="140" text-anchor="middle" dominant-baseline="central" fill="#1c1917" font-size="15" font-weight="600">Projects &amp; Tasks</text>
-                </svg>
-                <svg viewBox="0 0 340 440" role="img" aria-labelledby="diagram-title-m diagram-desc-m" class="mx-auto h-auto w-full max-w-sm font-sans lg:hidden">
+                <img src="{{ asset('brand/architecture.svg') }}" alt="TaskNet architecture: the browser, through the Laravel UI, and an AI client, through OAuth and the MCP server, both reach the same shared Laravel layer of actions, policies, validation and limits, which uses PostgreSQL. Events from that layer reach the browser through Reverb and Redis, and the browser refreshes automatically." width="980" height="450" class="hidden h-auto w-full lg:block">
+                <svg viewBox="0 0 340 520" role="img" aria-labelledby="diagram-title-m diagram-desc-m" class="mx-auto h-auto w-full max-w-sm font-sans lg:hidden">
                     <title id="diagram-title-m">How the browser and MCP reach the same workspace</title>
-                    <desc id="diagram-desc-m">Two paths lead to the same workspace. In the browser, a user works through the TaskNet UI. With an AI client, the client is approved through OAuth and connects through MCP. Both paths pass through the same shared application rules before reaching Projects and Tasks.</desc>
+                    <desc id="diagram-desc-m">Two paths lead to the same workspace. In the browser, a user works through the TaskNet UI. With an AI client, the client is approved through OAuth and connects through MCP. Both paths pass through the same shared application rules before reaching PostgreSQL. Changes also reach the browser through Reverb and Redis, and it refreshes automatically.</desc>
                     <defs><marker id="arrow-v" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M1 1.5 9 5 1 8.5" fill="none" stroke="#78716c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></marker></defs>
                     <text x="75" y="12" text-anchor="middle" fill="#78716c" font-size="14" font-weight="600">Using the browser</text>
                     <text x="265" y="12" text-anchor="middle" fill="#78716c" font-size="14" font-weight="600">Using an AI client</text>
@@ -55,8 +36,12 @@
                     <path d="M265 144V170" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-v)" />
                     <path d="M265 216V277" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-v)" />
                     <rect x="0" y="280" width="340" height="70" rx="12" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.5" /><text x="170" y="310" text-anchor="middle" dominant-baseline="central" fill="#134e4a" font-size="15" font-weight="600">Shared application rules</text><text x="170" y="335" text-anchor="middle" dominant-baseline="central" fill="#0f766e" font-size="12">Validation · policies · limits</text>
-                    <path d="M170 350V391" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-v)" />
-                    <rect x="60" y="394" width="220" height="44" rx="12" fill="#ffffff" stroke="#1c1917" stroke-width="1.5" /><text x="170" y="416" text-anchor="middle" dominant-baseline="central" fill="#1c1917" font-size="15" font-weight="600">Projects &amp; Tasks</text>
+                    <path d="M265 350V391" fill="none" stroke="#a8a29e" stroke-width="1.5" marker-end="url(#arrow-v)" />
+                    <rect x="190" y="394" width="150" height="44" rx="10" fill="#ffffff" stroke="#1c1917" stroke-width="1.5" /><text x="265" y="416" text-anchor="middle" dominant-baseline="central" fill="#1c1917" font-size="14" font-weight="600">PostgreSQL</text>
+                    <path d="M75 350V391" fill="none" stroke="#a8a29e" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-v)" />
+                    <rect x="0" y="394" width="150" height="44" rx="10" fill="#ffffff" stroke="#d6d3d1" stroke-width="1.25" /><text x="75" y="416" text-anchor="middle" dominant-baseline="central" fill="#292524" font-size="14" font-weight="500">Reverb + Redis</text>
+                    <path d="M75 438V469" fill="none" stroke="#a8a29e" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow-v)" />
+                    <rect x="0" y="472" width="150" height="44" rx="10" fill="#ffffff" stroke="#d6d3d1" stroke-width="1.25" /><text x="75" y="494" text-anchor="middle" dominant-baseline="central" fill="#292524" font-size="14" font-weight="500">Browser refreshes</text>
                 </svg>
             </div>
         </figure>
@@ -131,16 +116,19 @@
         <section aria-labelledby="stack-heading" class="flex flex-col gap-4">
             <h2 id="stack-heading" class="text-2xl font-semibold tracking-tight">Built with</h2>
             <ul class="flex flex-wrap gap-x-3 gap-y-1 leading-7 text-stone-700">
-                @foreach (['Laravel', 'PHP', 'PostgreSQL', 'Laravel MCP', 'Passport', 'Reverb', 'Docker'] as $technology)
+                @foreach (['Laravel', 'PHP', 'Laravel MCP', 'OAuth 2.0 / Passport', 'PostgreSQL', 'Reverb', 'Redis', 'Docker'] as $technology)
                     <li class="after:ml-3 after:text-stone-400 after:content-['·'] last:after:content-none">{{ $technology }}</li>
                 @endforeach
             </ul>
         </section>
 
-        <p class="flex flex-wrap gap-x-10 gap-y-4 border-t border-stone-200 pt-10 font-medium">
-            <x-external-link href="https://github.com/seerat89/tasknet" class="{{ $textLink }}">View source on GitHub</x-external-link>
-            <a href="{{ route('privacy') }}" class="{{ $textLink }}">Read the privacy notice</a>
-            <a href="{{ route('terms') }}" class="{{ $textLink }}">Read the terms</a>
-        </p>
+        <div class="flex flex-col gap-6 border-t border-stone-200 pt-10">
+            <p class="flex flex-wrap gap-x-10 gap-y-4 font-medium">
+                <x-external-link href="https://github.com/seerat89/tasknet" class="{{ $textLink }}">View source on GitHub</x-external-link>
+                <a href="{{ route('privacy') }}" class="{{ $textLink }}">Read the privacy notice</a>
+                <a href="{{ route('terms') }}" class="{{ $textLink }}">Read the terms</a>
+            </p>
+            <p class="text-sm text-stone-500">Built by Seerat Amini · <x-external-link href="https://seerat.me" class="{{ $textLink }}">seerat.me</x-external-link></p>
+        </div>
     </div>
 </x-app-layout>

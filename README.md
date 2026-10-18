@@ -13,9 +13,9 @@
 
 **Live demo: https://tasknet.seerat.me**
 
-TaskNet is a small project and task manager built to explore how an AI agent can work with a Laravel application through [MCP](https://modelcontextprotocol.io) while following the same validation, permissions and business rules as the browser. You start a temporary demo workspace, connect your own AI client, and manage projects and tasks from either side. Changes made by the agent show up in the browser as they happen.
+TaskNet is a Laravel task manager with an MCP server that lets AI clients securely manage projects and tasks through the same authorization, validation and business logic as the web application.
 
-I built it as a portfolio project to show how to expose an existing Laravel application to AI clients without a second, parallel implementation of its rules.
+It demonstrates how an existing application can expose controlled capabilities to AI agents without creating a separate implementation of its business rules.
 
 > **This is a demo, not a product.** Do not store sensitive, confidential or important information in it. Demo workspaces are temporary and are deleted automatically.
 
@@ -39,12 +39,7 @@ MCP support for custom servers varies by client and plan.
 
 ## How it works
 
-```
-Browser   ──▶ Laravel UI ─────────────┐
-                                       ├─▶ shared actions, policies, validation, limits ─▶ PostgreSQL
-AI client ──▶ OAuth ─▶ MCP server ─────┘                      │
-                                                              └─ events ─▶ Reverb (+ Redis) ─▶ browser updates
-```
+![TaskNet architecture: the browser (through the Laravel UI) and an AI client (through OAuth and the MCP server) both reach the same shared Laravel layer of actions, policies, validation and limits, which uses PostgreSQL. Events from that layer reach the browser through Reverb and Redis, and the browser refreshes automatically.](public/brand/architecture.svg)
 
 An AI client connects to `/mcp` and authorizes through OAuth. Every tool call then runs as that workspace's user, so the same policies that protect the web UI protect the agent. After each change, the shared action emits an event; Reverb pushes it to the open browser, which refreshes. A realtime outage never fails a saved change.
 
