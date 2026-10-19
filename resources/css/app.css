@@ -26,3 +26,70 @@
         cursor: not-allowed;
     }
 }
+
+/* Page-request feedback (resources/js/loading.js). */
+@keyframes tn-progress {
+    from {
+        transform: scaleX(0.04);
+    }
+
+    to {
+        transform: scaleX(0.9);
+    }
+}
+
+@keyframes tn-pulse {
+    0%,
+    100% {
+        opacity: 0.55;
+        transform: scale(0.94);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+}
+
+@keyframes tn-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.tn-progress:not([hidden]) {
+    animation: tn-progress 10s cubic-bezier(0.08, 0.6, 0.2, 1) forwards;
+}
+
+.tn-loader:not([hidden]) {
+    animation: tn-fade-in 0.2s ease-out;
+}
+
+.tn-loader-mark {
+    animation: tn-pulse 1.4s ease-in-out infinite;
+}
+
+button[data-loading] {
+    cursor: progress;
+    opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tn-progress:not([hidden]) {
+        animation: none;
+        transform: scaleX(0.5);
+    }
+
+    .tn-loader:not([hidden]) {
+        animation: none;
+    }
+
+    .tn-loader-mark {
+        animation: none;
+        opacity: 0.85;
+    }
+}

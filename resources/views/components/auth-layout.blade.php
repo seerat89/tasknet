@@ -49,5 +49,6 @@
 
             <p class="text-center text-xs text-stone-500 dark:text-stone-400">Your projects. Your tasks. Your agents.</p>
         </main>
+        <x-loading-indicator />
     </body>
 </html>

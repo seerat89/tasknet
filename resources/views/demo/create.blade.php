@@ -13,7 +13,7 @@
             <p class="pl-7 text-xs leading-5 text-stone-500 dark:text-stone-400">By creating a demo workspace, you acknowledge the <a href="{{ route('privacy') }}" class="rounded-sm underline decoration-stone-300 underline-offset-4 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 dark:hover:text-teal-400">Privacy Notice</a>.</p>
         </div>
 
-        <x-auth.button>Start demo</x-auth.button>
+        <x-auth.button data-loading-text="Starting…">Start demo</x-auth.button>
     </form>
 
     <p class="text-center text-sm text-stone-600 dark:text-stone-400">

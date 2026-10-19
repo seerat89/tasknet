@@ -80,7 +80,7 @@
                         @if ($user)
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="rounded-sm {{ $logout }}">Log out</button>
+                                <button type="submit" data-loading-text="Logging out…" class="rounded-sm {{ $logout }}">Log out</button>
                             </form>
                         @else
                             <a href="{{ route('login') }}" class="rounded-sm {{ $logout }}">Sign in</a>
@@ -119,7 +119,7 @@
                             </p>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="flex min-h-12 w-full items-center rounded-lg text-base {{ $logout }}">Log out</button>
+                                <button type="submit" data-loading-text="Logging out…" class="flex min-h-12 w-full items-center rounded-lg text-base {{ $logout }}">Log out</button>
                             </form>
                         </div>
                     @endif
@@ -142,5 +142,6 @@
                 </nav>
             </footer>
         </div>
+        <x-loading-indicator />
     </body>
 </html>

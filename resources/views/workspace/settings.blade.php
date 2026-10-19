@@ -78,7 +78,7 @@
                     </div>
 
                     <div>
-                        <button type="submit" class="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">Delete workspace permanently</button>
+                        <button type="submit" data-loading-text="Deleting…" class="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">Delete workspace permanently</button>
                     </div>
                 </form>
             </details>

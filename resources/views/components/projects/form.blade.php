@@ -10,7 +10,7 @@
     <x-form.textarea name="description" label="Description (optional)" :value="$project?->description" maxlength="2000" />
 
     <div class="flex flex-wrap gap-3">
-        <x-auth.button class="w-auto!">{{ $submit }}</x-auth.button>
+        <x-auth.button class="w-auto!" :data-loading-text="str_starts_with($submit, 'Create') ? 'Creating…' : 'Saving…'">{{ $submit }}</x-auth.button>
         <x-link-button variant="secondary" :href="$cancel">Cancel</x-link-button>
     </div>
 </form>

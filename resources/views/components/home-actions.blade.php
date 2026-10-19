@@ -5,7 +5,7 @@
         <a href="{{ route('dashboard') }}" class="rounded-sm text-sm font-medium text-stone-600 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">Dashboard</a>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
-            <x-auth.button>Log out</x-auth.button>
+            <x-auth.button data-loading-text="Logging out…">Log out</x-auth.button>
         </form>
     @else
         <a href="{{ route('login') }}" @class([

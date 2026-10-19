@@ -9,7 +9,7 @@
             Remember me
         </label>
 
-        <x-auth.button>Log in</x-auth.button>
+        <x-auth.button data-loading-text="Signing in…">Log in</x-auth.button>
     </form>
 
     <p class="text-center text-sm text-stone-600 dark:text-stone-400">

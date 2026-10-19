@@ -40,7 +40,7 @@
 
         <form method="POST" action="{{ route('demo.credentials.continue') }}">
             @csrf
-            <x-auth.button class="sm:w-auto sm:min-w-56">Continue to workspace</x-auth.button>
+            <x-auth.button class="sm:w-auto sm:min-w-56" data-loading-text="Opening workspace…">Continue to workspace</x-auth.button>
         </form>
     </div>
 </x-app-layout>
