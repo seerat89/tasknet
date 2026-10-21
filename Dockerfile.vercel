@@ -19,8 +19,6 @@ RUN npm run build
 # PHP base shared by the build and runtime stages, with the extensions TaskNet needs.
 FROM dunglas/frankenphp:1-php8.5-bookworm AS base
 
-RUN php -v
-
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && install-php-extensions bcmath intl opcache pcntl pdo_pgsql zip
 
