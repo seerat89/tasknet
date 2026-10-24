@@ -1,16 +1,21 @@
+
 {
-    "permissions": {
-        "deny": [
-            "Read(.env)",
-            "Read(.env.*)",
-            "Read(!.env.example)",
-            "Read(.npmrc)",
-            "Read(auth.json)",
-            "Read(**/*.pem)",
-            "Read(**/*.key)",
-            "Read(**/*.p12)",
-            "Read(**/*.pfx)",
-            "Read(database/*.sqlite*)"
-        ]
-    }
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(!.env.example)",
+      "Read(.npmrc)",
+      "Read(auth.json)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.p12)",
+      "Read(**/*.pfx)",
+      "Read(database/*.sqlite*)"
+    ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  }
 }
