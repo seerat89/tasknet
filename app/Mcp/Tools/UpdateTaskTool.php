@@ -53,17 +53,21 @@ class UpdateTaskTool extends Tool
     {
         $user = $this->workspaceUser($request);
 
-        $data = $request->validate([
-            'project_id' => ['required', 'integer'],
-            'task_id' => ['required', 'integer'],
-            ...$this->optionalRules((new UpdateTaskRequest)->rules()),
-        ]);
+        return $this->reportingRefusals(function () use ($request, $user, $updateTask): ResponseFactory {
+            $this->blankAsNull($request, ['description', 'due_date']);
 
-        $project = $this->findProject($user, $data['project_id']);
-        $task = $this->findTask($user, $project, $data['task_id']);
+            $data = $request->validate([
+                'project_id' => ['required', 'integer'],
+                'task_id' => ['required', 'integer'],
+                ...$this->optionalRules((new UpdateTaskRequest)->rules()),
+            ]);
 
-        $task = $updateTask->update($user, $project, $task, $data);
+            $project = $this->findProject($user, $data['project_id']);
+            $task = $this->findTask($user, $project, $data['task_id']);
 
-        return Response::structured(['task' => TaskResource::make($task)->resolve()]);
+            $task = $updateTask->update($user, $project, $task, $data);
+
+            return Response::structured(['task' => TaskResource::make($task)->resolve()]);
+        });
     }
 }

@@ -3,21 +3,31 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
-        "dev": "vite"
+        "build": "vite build && npm run build:mcp",
+        "build:mcp": "vite build -c vite.mcp.config.ts",
+        "dev": "vite",
+        "test": "vitest run",
+        "typecheck": "tsc"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
         "concurrently": "^10.0.3",
+        "jsdom": "^31.0.1",
         "laravel-vite-plugin": "^3.1",
         "tailwindcss": "^4.0.0",
-        "vite": "^8.0.0"
+        "typescript": "^7.0.2",
+        "vite": "^8.3.8",
+        "vite-plugin-singlefile": "^2.3.4",
+        "vitest": "^5.1.2"
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
+        "@modelcontextprotocol/client": "^2.4.0",
+        "@modelcontextprotocol/ext-apps": "^2.0.4",
         "laravel-echo": "^2.6.1",
-        "pusher-js": "^8.6.0"
+        "pusher-js": "^8.6.0",
+        "zod": "^4.6.7"
     }
 }

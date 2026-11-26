@@ -78,6 +78,12 @@ jobs:
       - name: Build frontend assets
         run: npm run build
 
+      - name: Type-check the MCP App
+        run: npm run typecheck
+
+      - name: Test the MCP App
+        run: npm test
+
       # OAuth signing keys are git-ignored; some tests need them to exist, as they do after the first local start.
       - name: Generate OAuth keys
         run: php artisan passport:keys --no-interaction

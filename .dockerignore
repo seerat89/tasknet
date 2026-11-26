@@ -8,6 +8,7 @@ storage/logs
 storage/framework
 public/build
 public/hot
+resources/dist
 .github
 .claude
 .agents

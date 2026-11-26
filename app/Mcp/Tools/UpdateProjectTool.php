@@ -47,15 +47,19 @@ class UpdateProjectTool extends Tool
     {
         $user = $this->workspaceUser($request);
 
-        $data = $request->validate([
-            'project_id' => ['required', 'integer'],
-            ...$this->optionalRules((new UpdateProjectRequest)->rules()),
-        ]);
+        return $this->reportingRefusals(function () use ($request, $user, $updateProject): ResponseFactory {
+            $this->blankAsNull($request, ['description']);
 
-        $project = $this->findProject($user, $data['project_id']);
+            $data = $request->validate([
+                'project_id' => ['required', 'integer'],
+                ...$this->optionalRules((new UpdateProjectRequest)->rules()),
+            ]);
 
-        $project = $updateProject->update($user, $project, $data)->loadCount('tasks');
+            $project = $this->findProject($user, $data['project_id']);
 
-        return Response::structured(['project' => ProjectResource::make($project)->resolve()]);
+            $project = $updateProject->update($user, $project, $data)->loadCount('tasks');
+
+            return Response::structured(['project' => ProjectResource::make($project)->resolve()]);
+        });
     }
 }

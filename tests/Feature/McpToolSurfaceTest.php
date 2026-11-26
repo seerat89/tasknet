@@ -17,13 +17,15 @@ beforeEach(function () {
     $this->otherProject = Project::factory()->for($this->otherUser)->create(['name' => 'Secret roadmap']);
 });
 
-test('all eight tools are advertised directly and nothing else', function () {
+test('the eight data tools and four view tools are advertised directly and nothing else', function () {
     Passport::actingAs($this->user, ['mcp:use'], 'api');
 
     $tools = mcpRequest($this, 'tools/list')->assertOk()->json('result.tools.*.name');
 
-    expect($tools)->toBe(['list_projects', 'get_project', 'create_project', 'update_project', 'list_tasks', 'get_task', 'create_task', 'update_task'])
-        ->not->toContain('search_tools', 'execute_tools');
+    expect($tools)->toBe([
+        'list_projects', 'get_project', 'create_project', 'update_project', 'list_tasks', 'get_task', 'create_task', 'update_task',
+        'show_projects', 'show_tasks', 'show_project_form', 'show_task_form',
+    ])->not->toContain('search_tools', 'execute_tools');
 });
 
 test('no delete tools are exposed', function () {

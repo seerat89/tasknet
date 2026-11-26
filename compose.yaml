@@ -15,8 +15,11 @@ services:
         [ -f storage/oauth-private.key ] || php artisan passport:keys --no-interaction
         php artisan migrate --force --no-interaction
         exec php artisan serve --host=0.0.0.0 --port=8000
+    # Published ports are bound to the loopback addresses, so only this machine (including a tunnel
+    # such as ngrok running on it) can reach them. Both are listed because localhost can mean either.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+      - "[::1]:8000:8000"
     volumes:
       - .:/var/www/html
       # Keep vendor/ off the slow Windows/macOS bind mount.
@@ -35,7 +38,8 @@ services:
         until [ -f vendor/autoload.php ]; do sleep 2; done
         exec php artisan reverb:start --no-interaction
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+      - "[::1]:8080:8080"
     volumes:
       - .:/var/www/html
       - vendor:/var/www/html/vendor
@@ -47,7 +51,8 @@ services:
       POSTGRES_USER: tasknet_app
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Copy .env.example to .env first}
     ports:
-      - "5434:5432"
+      - "127.0.0.1:5434:5432"
+      - "[::1]:5434:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
@@ -64,10 +69,19 @@ services:
       - -c
       - |
         set -e
-        [ -x node_modules/.bin/vite ] || npm install
+        # Install when the lock file differs from the one last installed. $$ is a literal $ in Compose.
+        if [ "$$(cat node_modules/.lock-sha 2>/dev/null)" != "$$(sha1sum package-lock.json | cut -d' ' -f1)" ]; then
+          # An if block, so that set -e stops the container when the install fails.
+          npm install
+          sha1sum package-lock.json | cut -d' ' -f1 > node_modules/.lock-sha
+        fi
+        # The MCP App is served as a built file, which the dev server does not produce. After editing
+        # resources/mcp-app, run: docker compose exec node npm run build:mcp
+        npm run build:mcp || echo "MCP App build failed; see the output above."
         exec npm run dev -- --host 0.0.0.0
     ports:
-      - "5173:5173"
+      - "127.0.0.1:5173:5173"
+      - "[::1]:5173:5173"
     volumes:
       - .:/var/www/html
       # Keep Linux-native packages out of the host checkout (Windows/macOS node_modules differ).

@@ -42,12 +42,15 @@ test('a token without the MCP scope is rejected', function () {
     mcpRequest($this, 'tools/list')->assertForbidden();
 });
 
-test('an authenticated OAuth user lists the eight TaskNet tools', function () {
+test('an authenticated OAuth user lists the TaskNet tools', function () {
     Passport::actingAs($this->user, ['mcp:use'], 'api');
 
     $tools = mcpRequest($this, 'tools/list')->assertOk()->json('result.tools.*.name');
 
-    expect($tools)->toBe(['list_projects', 'get_project', 'create_project', 'update_project', 'list_tasks', 'get_task', 'create_task', 'update_task']);
+    expect($tools)->toBe([
+        'list_projects', 'get_project', 'create_project', 'update_project', 'list_tasks', 'get_task', 'create_task', 'update_task',
+        'show_projects', 'show_tasks', 'show_project_form', 'show_task_form',
+    ]);
 });
 
 test('an authenticated OAuth user only sees their own workspace', function () {

@@ -52,15 +52,19 @@ class CreateTaskTool extends Tool
     {
         $user = $this->workspaceUser($request);
 
-        $data = $request->validate([
-            'project_id' => ['required', 'integer'],
-            ...$this->optionalRules((new StoreTaskRequest)->rules(), ['status', 'priority']),
-        ]);
+        return $this->reportingRefusals(function () use ($request, $user, $createTask): ResponseFactory {
+            $this->blankAsNull($request, ['description', 'due_date']);
 
-        $project = $this->findProject($user, $data['project_id']);
+            $data = $request->validate([
+                'project_id' => ['required', 'integer'],
+                ...$this->optionalRules((new StoreTaskRequest)->rules(), ['status', 'priority']),
+            ]);
 
-        $task = $createTask->create($user, $project, $data)->refresh();
+            $project = $this->findProject($user, $data['project_id']);
 
-        return Response::structured(['task' => TaskResource::make($task)->resolve()]);
+            $task = $createTask->create($user, $project, $data)->refresh();
+
+            return Response::structured(['task' => TaskResource::make($task)->resolve()]);
+        });
     }
 }

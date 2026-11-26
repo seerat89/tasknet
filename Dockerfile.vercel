@@ -44,6 +44,8 @@ RUN composer install \
 
 COPY . .
 COPY --from=assets /app/public/build public/build
+# The MCP App is read by Laravel and deliberately kept outside the web root.
+COPY --from=assets /app/resources/dist resources/dist
 
 # Rebuilds the autoloader and runs package discovery for the production packages only.
 # `php artisan optimize` is deliberately not run: it would freeze build-time environment values.

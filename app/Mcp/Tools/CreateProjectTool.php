@@ -46,10 +46,14 @@ class CreateProjectTool extends Tool
     {
         $user = $this->workspaceUser($request);
 
-        $data = $request->validate((new StoreProjectRequest)->rules());
+        return $this->reportingRefusals(function () use ($request, $user, $createProject): ResponseFactory {
+            $this->blankAsNull($request, ['description']);
 
-        $project = $createProject->create($user, $data);
+            $data = $request->validate((new StoreProjectRequest)->rules());
 
-        return Response::structured(['project' => ProjectResource::make($project)->resolve()]);
+            $project = $createProject->create($user, $data);
+
+            return Response::structured(['project' => ProjectResource::make($project)->resolve()]);
+        });
     }
 }
