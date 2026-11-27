@@ -138,20 +138,6 @@
         @apply cursor-not-allowed no-underline opacity-60;
     }
 
-    .tn-saving-select {
-        @apply relative inline-flex;
-    }
-
-    /* Floats below its select without taking space, and lets clicks through to what is underneath. */
-    .tn-hint {
-        @apply pointer-events-none absolute top-full left-0 z-10 mt-1 w-max max-w-40 px-2 py-1;
-        border: var(--border-width-regular, 1px) solid var(--tn-border);
-        border-radius: var(--tn-radius);
-        background: var(--tn-surface);
-        color: var(--tn-muted);
-        font-size: var(--font-text-xs-size, 0.75rem);
-    }
-
     .tn-select {
         @apply min-h-8 max-w-full px-2 py-1;
     }

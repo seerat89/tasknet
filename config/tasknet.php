@@ -39,6 +39,9 @@ return [
     | requests_per_minute: maximum authenticated /mcp requests per minute for
     | each workspace.
     |
+    | activity_interval_minutes: how stale a client's "last activity" time must
+    | be before it is written again.
+    |
     | oauth: lifetimes for the OAuth state external MCP clients rely on.
     |  - access_token_days / refresh_token_days: how long issued tokens work.
     |  - unused_client_days: how long a dynamically registered client must have
@@ -53,6 +56,8 @@ return [
 
     'mcp' => [
         'requests_per_minute' => (int) env('MCP_RATE_LIMIT', 120),
+
+        'activity_interval_minutes' => 5,
 
         'oauth' => [
             'access_token_days' => 1,

@@ -249,12 +249,14 @@ describe('task explorer', () => {
         expect(text()).toContain('1 of 3 completed');
     });
 
-    it('changes status and priority directly', async () => {
+    it('changes status and priority once saved', async () => {
         const { host } = await open();
 
         enter('Status of Alpha', 'in_progress');
+        control<HTMLButtonElement>('Save changes to Alpha').click();
         await settle();
         enter('Priority of Alpha', 'low');
+        control<HTMLButtonElement>('Save changes to Alpha').click();
         await settle();
 
         expect(host.calls('update_task').map(([, args]) => args)).toEqual([
@@ -294,6 +296,7 @@ describe('task explorer', () => {
         await open(host);
 
         enter('Status of Alpha', 'completed');
+        control<HTMLButtonElement>('Save changes to Alpha').click();
         await settle();
 
         expect(errors()).toContain('Task not found.');

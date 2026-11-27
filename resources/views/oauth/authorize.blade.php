@@ -23,10 +23,7 @@
 
     <section aria-labelledby="access-heading" class="flex flex-col gap-3">
         <h2 id="access-heading" class="text-sm font-semibold">If you approve, this client can</h2>
-        <ul class="flex list-disc flex-col gap-1 pl-5 text-sm leading-6 text-stone-600 dark:text-stone-400">
-            <li>View your projects and tasks</li>
-            <li>Create and update projects and tasks</li>
-        </ul>
+        <x-mcp-permissions class="text-sm leading-6 text-stone-600 dark:text-stone-400" />
         <p class="text-sm leading-6 text-stone-600 dark:text-stone-400">It cannot delete anything, see other workspaces, or learn your Demo ID password. It follows the same limits as the TaskNet web app.</p>
     </section>
 

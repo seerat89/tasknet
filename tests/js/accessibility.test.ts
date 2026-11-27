@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Route, ToolResult } from '../../resources/mcp-app/types';
 import {
     buttons,
@@ -34,228 +34,375 @@ const LIST: Route = { view: 'tasks', project_id: 1 };
 const DETAIL: Route = { view: 'task', project_id: 1, task_id: 1 };
 const title = 'Write the announcement';
 const statusLabel = `Status of ${title}`;
-const saves = (host: ReturnType<typeof fakeHost>) => host.calls('update_task').map(([, args]) => args.status ?? args.priority);
+// While saving, the same button reads "Saving…" and its name says so.
+const saveButton = (name = title) =>
+    document.querySelector<HTMLButtonElement>(`[aria-label="Save changes to ${name}"], [aria-label="Saving changes to ${name}"]`)!;
+const discardButton = (name = title) => control<HTMLButtonElement>(`Discard changes to ${name}`);
+const list = (label = statusLabel) => control<HTMLSelectElement>(label);
+const sent = (host: ReturnType<typeof fakeHost>) => host.calls('update_task').map(([, args]) => args);
+const priorityLabel = `Priority of ${title}`;
 
-describe('keyboard changes to status and priority', () => {
-    it('does not save while arrow keys move through the options, then saves the final value on Enter', async () => {
-        const { host } = await open(LIST);
+describe.each([
+    ['task list', LIST],
+    ['task view', DETAIL],
+])('choosing a status or priority in the %s', (_name, route) => {
+    it.each([
+        ['a pointer or touch pick', () => enter(statusLabel, 'completed')],
+        [
+            'arrow keys on the closed list',
+            () => {
+                press(statusLabel, 'ArrowDown', 'in_progress');
+                press(statusLabel, 'ArrowDown', 'completed');
+            },
+        ],
+        [
+            'a pick from the list opened with the keyboard',
+            () => {
+                press(statusLabel, ' ');
+                enter(statusLabel, 'completed');
+            },
+        ],
+    ])('writes nothing after %s, and offers Save and Discard', async (_way, choose) => {
+        const { host } = await open(route);
 
-        control(statusLabel).focus();
-        press(statusLabel, 'ArrowDown', 'in_progress');
-        press(statusLabel, 'ArrowDown', 'completed');
+        expect(saveButton().hidden).toBe(true);
+        expect(discardButton().hidden).toBe(true);
+        expect(list().hasAttribute('aria-describedby')).toBe(false);
+
+        choose();
         await settle();
 
-        expect(saves(host)).toEqual([]);
-        expect(document.getElementById('tn-hint-status-1')!.hidden).toBe(false);
-        expect(control(statusLabel).getAttribute('aria-describedby')).toBe('tn-hint-status-1');
-
-        press(statusLabel, 'Enter');
-        await settle();
-
-        expect(saves(host)).toEqual(['completed']);
-        expect(document.activeElement).toBe(control(statusLabel));
+        expect(host.writes()).toEqual([]);
+        expect(host.tasks[0].status).toBe('todo');
+        expect(list().value).toBe('completed');
+        expect(saveButton().hidden).toBe(false);
+        expect(discardButton().hidden).toBe(false);
+        expect(document.getElementById(list().getAttribute('aria-describedby')!)!.textContent).toBe(
+            'Not saved yet. Press Enter or choose Save.',
+        );
+        expect(list(priorityLabel).hasAttribute('aria-describedby')).toBe(false);
     });
 
-    it.each(['Home', 'End', 'PageDown', 'c'])('also waits after %s', async (key) => {
-        const { host } = await open(LIST);
+    it('announces an unsaved choice once, not at every step', async () => {
+        await open(route);
 
-        press(statusLabel, key, 'completed');
+        enter(statusLabel, 'in_progress');
         await settle();
+        expect(spoken()).toBe('Not saved yet. Press Enter or choose Save.');
 
-        expect(saves(host)).toEqual([]);
+        const region = document.querySelector('main > [role="status"]')!;
+        let changes = 0;
+        const observer = new MutationObserver((records) => (changes += records.length));
+
+        observer.observe(region, { childList: true, characterData: true, subtree: true });
+        enter(statusLabel, 'completed');
+        enter(priorityLabel, 'high');
+        await settle();
+        observer.disconnect();
+
+        expect(changes).toBe(0);
     });
 
-    it('discards the choice when focus leaves, says so, and sends nothing', async () => {
-        const { host } = await open(LIST);
+    it('saves both chosen fields with one Save, and moves focus to a list that stays', async () => {
+        const { host } = await open(route);
 
-        control(statusLabel).focus();
-        press(statusLabel, 'ArrowDown', 'in_progress');
-        press(statusLabel, 'Tab');
-        control(`Priority of ${title}`).focus();
+        enter(priorityLabel, 'high');
+        enter(statusLabel, 'in_progress');
+        saveButton().focus();
+        saveButton().click();
         await settle();
 
-        expect(saves(host)).toEqual([]);
-        expect(control<HTMLSelectElement>(statusLabel).value).toBe('todo');
-        expect(document.getElementById('tn-hint-status-1')!.hidden).toBe(true);
-        expect(spoken()).toBe('Change not saved.');
-        expect(document.activeElement).toBe(control(`Priority of ${title}`));
+        expect(sent(host)).toEqual([{ project_id: 1, task_id: 1, priority: 'high', status: 'in_progress' }]);
+        expect(saveButton().hidden).toBe(true);
+        expect(discardButton().hidden).toBe(true);
+        expect(list().value).toBe('in_progress');
+        expect(document.activeElement).toBe(list());
+        expect(spoken()).toBe('Task saved.');
     });
 
-    it('shows no save hint when the keyboard returns to the saved value', async () => {
-        const { host } = await open(LIST);
+    it('sends only the field that changed', async () => {
+        const { host } = await open(route);
 
-        press(statusLabel, 'ArrowDown', 'in_progress');
-        press(statusLabel, 'ArrowUp', 'todo');
-        press(statusLabel, 'Enter');
+        enter(priorityLabel, 'low');
+        saveButton().focus();
+        saveButton().click();
         await settle();
 
-        expect(document.getElementById('tn-hint-status-1')!.hidden).toBe(true);
-        expect(saves(host)).toEqual([]);
+        expect(sent(host)).toEqual([{ project_id: 1, task_id: 1, priority: 'low' }]);
+        expect(document.activeElement).toBe(list(priorityLabel));
     });
 
-    it('undoes the choice with Escape', async () => {
-        const { host } = await open(LIST);
+    it('saves once on Enter and keeps focus on the list', async () => {
+        const { host } = await open(route);
 
-        control(statusLabel).focus();
+        list().focus();
         press(statusLabel, 'ArrowDown', 'in_progress');
-        press(statusLabel, 'Escape');
-        control<HTMLElement>(`Priority of ${title}`).focus();
+        const event = press(statusLabel, 'Enter');
         await settle();
 
-        expect(saves(host)).toEqual([]);
-        expect(control<HTMLSelectElement>(statusLabel).value).toBe('todo');
+        expect(event.defaultPrevented).toBe(true);
+        expect(sent(host)).toEqual([{ project_id: 1, task_id: 1, status: 'in_progress' }]);
+        expect(document.activeElement).toBe(list());
     });
 
-    it('keeps an unsaved choice across a redraw', async () => {
-        const { controller, host } = await open(LIST);
+    it('leaves Enter alone on a list with nothing to save, so it can open', async () => {
+        const { host } = await open(route);
 
-        control(statusLabel).focus();
-        press(statusLabel, 'ArrowDown', 'in_progress');
-        controller.setHostContext({ displayMode: 'fullscreen' });
+        expect(press(statusLabel, 'Enter').defaultPrevented).toBe(false);
+        enter(statusLabel, 'completed');
+        expect(press(priorityLabel, 'Enter').defaultPrevented).toBe(false);
         await settle();
 
-        expect(saves(host)).toEqual([]);
-        expect(control<HTMLSelectElement>(statusLabel).value).toBe('in_progress');
-        expect(document.activeElement).toBe(control(statusLabel));
-
-        press(statusLabel, 'Enter');
-        await settle();
-        expect(saves(host)).toEqual(['in_progress']);
+        expect(host.writes()).toEqual([]);
     });
 
     it.each([
-        ['Enter', {}],
-        [' ', {}],
-        ['ArrowDown', { altKey: true }],
-    ])('saves at once when the value was picked from the opened list (%s)', async (key, modifiers) => {
-        const { host } = await open(LIST);
+        [
+            'Escape',
+            () => {
+                list().focus();
+                press(statusLabel, 'Escape');
+            },
+        ],
+        [
+            'the Discard button',
+            () => {
+                discardButton().focus();
+                discardButton().click();
+            },
+        ],
+    ])('discards with %s without writing anything', async (_way, discard) => {
+        const { host } = await open(route);
 
-        press(statusLabel, key, undefined, modifiers);
         enter(statusLabel, 'completed');
+        discard();
         await settle();
 
-        expect(saves(host)).toEqual(['completed']);
+        expect(host.writes()).toEqual([]);
+        expect(list().value).toBe('todo');
+        expect(saveButton().hidden).toBe(true);
+        expect(list().hasAttribute('aria-describedby')).toBe(false);
+        expect(document.activeElement).toBe(list());
+        expect(spoken()).toBe('Change discarded.');
     });
 
-    it('saves a pointer choice at once, even after earlier key presses', async () => {
-        const { host } = await open(DETAIL);
+    it('has nothing to save once the saved value is chosen again', async () => {
+        const { host } = await open(route);
 
-        press(statusLabel, 'ArrowDown');
-        control(statusLabel).dispatchEvent(new Event('pointerdown'));
-        control(statusLabel).dispatchEvent(new Event('pointerup'));
         enter(statusLabel, 'completed');
+        enter(statusLabel, 'todo');
+        press(statusLabel, 'Enter');
         await settle();
 
-        expect(saves(host)).toEqual(['completed']);
+        expect(saveButton().hidden).toBe(true);
+        expect(host.writes()).toEqual([]);
+    });
+
+    it('keeps an unsaved choice, without writing, when focus moves on and the view redraws', async () => {
+        const { controller, host } = await open(route);
+
+        list().focus();
+        press(statusLabel, 'ArrowDown', 'in_progress');
+        list(priorityLabel).focus();
+        controller.setHostContext({ displayMode: 'fullscreen' });
+        await settle();
+
+        expect(host.writes()).toEqual([]);
+        expect(list().value).toBe('in_progress');
+        expect(saveButton().hidden).toBe(false);
+        expect(document.activeElement).toBe(list(priorityLabel));
+    });
+
+    it('sends one request however Save and Enter are repeated, and holds the choice while saving', async () => {
+        const host = fakeHost();
+        const pending = deferred<ToolResult>();
+
+        host.handlers.update_task = () => pending.promise;
+        await open(route, host);
+        enter(statusLabel, 'completed');
+        list().focus();
+        saveButton().click();
+        saveButton().click();
+        press(statusLabel, 'Enter');
+        press(statusLabel, 'Enter');
+        press(statusLabel, 'Escape');
+        discardButton().click();
+        control<HTMLButtonElement>(`Complete ${title}`).click();
+        enter(priorityLabel, 'high');
+
+        expect(sent(host)).toHaveLength(1);
+        expect(saveButton().textContent).toBe('Saving…');
+        expect(isDisabled(saveButton())).toBe(true);
+        expect(isDisabled(discardButton())).toBe(true);
+        expect(list().value).toBe('completed');
+        expect(list(priorityLabel).value).toBe('medium');
+
+        pending.resolve({ structuredContent: { task: task({ status: 'completed' }) } });
+        await settle();
+        expect(saveButton().hidden).toBe(true);
+    });
+
+    it('forgets the choice and shows the real value when a save is refused', async () => {
+        const host = fakeHost();
+
+        host.handlers.update_task = () => refusal('The selected status is invalid.', { status: ['The selected status is invalid.'] });
+        await open(route, host);
+        enter(statusLabel, 'completed');
+        saveButton().click();
+        await settle();
+
+        expect(errors()).toContain('The selected status is invalid.');
+        expect(list().value).toBe('todo');
+        expect(saveButton().hidden).toBe(true);
+    });
+
+    it('treats Complete as its own action, dropping an unsaved choice without sending it', async () => {
+        const { host } = await open(route);
+
+        enter(priorityLabel, 'high');
+        control<HTMLButtonElement>(`Complete ${title}`).click();
+        await settle();
+
+        expect(sent(host)).toEqual([{ project_id: 1, task_id: 1, status: 'completed' }]);
+        expect(list(priorityLabel).value).toBe('medium');
+        expect(saveButton().hidden).toBe(true);
+    });
+
+    it('discards an unsaved choice when the user leaves the view', async () => {
+        const { controller, host } = await open(route);
+
+        enter(statusLabel, 'completed');
+        controller.open({ view: 'projects' });
+        await settle();
+        controller.open(route);
+        await settle();
+
+        expect(host.writes()).toEqual([]);
+        expect(list().value).toBe('todo');
+        expect(saveButton().hidden).toBe(true);
+    });
+
+    // Chromium fires change on a select whose list is open while it is being removed.
+    it('ignores a change raised while a redraw removes the list', async () => {
+        const { controller, host } = await open(route);
+        const original = Element.prototype.replaceChildren;
+        const removed = list();
+        const spy = vi.spyOn(Element.prototype, 'replaceChildren').mockImplementation(function (this: Element, ...nodes) {
+            if (this.contains(removed)) {
+                removed.value = 'completed';
+                removed.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            original.apply(this, nodes);
+        });
+
+        controller.setHostContext({ displayMode: 'fullscreen' });
+        spy.mockRestore();
+        await settle();
+
+        expect(host.writes()).toEqual([]);
+        expect(list()).not.toBe(removed);
+        expect(list().value).toBe('todo');
+        expect(saveButton().hidden).toBe(true);
+
+        // A redraw afterwards must not reveal a choice nobody made.
+        controller.setHostContext({ displayMode: 'inline' });
+        expect(saveButton().hidden).toBe(true);
+    });
+});
+
+describe('unsaved choices in a list of tasks', () => {
+    const two = () => fakeHost({ tasks: [task(), task({ id: 2, title: 'Beta' })] });
+
+    it('keeps another task’s unsaved choice when one is saved', async () => {
+        const { host } = await open(LIST, two());
+
+        enter(statusLabel, 'in_progress');
+        enter('Priority of Beta', 'high');
+        saveButton('Beta').click();
+        await settle();
+
+        expect(sent(host)).toEqual([{ project_id: 1, task_id: 2, priority: 'high' }]);
+        expect(list().value).toBe('in_progress');
+        expect(saveButton().hidden).toBe(false);
+        expect(text()).not.toContain('An unsaved choice was cleared');
+    });
+
+    it.each([
+        ['to something else', 'completed'],
+        ['to the very value chosen here', 'in_progress'],
+    ])('drops a choice whose task has since changed %s, and says so', async (_how, status) => {
+        const { host } = await open(LIST, two());
+
+        enter(statusLabel, 'in_progress');
+        // The assistant, or the web app, changes the same task.
+        host.tasks[0].status = status as 'completed';
+        control<HTMLButtonElement>('Complete Beta').click();
+        await settle();
+
+        expect(sent(host)).toEqual([{ project_id: 1, task_id: 2, status: 'completed' }]);
+        expect(list().value).toBe(status);
+        expect(saveButton().hidden).toBe(true);
+        expect(notices()).toContain('An unsaved choice was cleared because its task changed.');
+        expect(spoken()).toBe('Task saved. An unsaved choice was cleared because its task changed.');
+    });
+
+    it('keeps a choice when only another field of its task changed elsewhere', async () => {
+        const { host } = await open(LIST, two());
+
+        enter(statusLabel, 'in_progress');
+        host.tasks[0].priority = 'high';
+        control<HTMLButtonElement>('Complete Beta').click();
+        await settle();
+
+        expect(list().value).toBe('in_progress');
+        saveButton().click();
+        await settle();
+        expect(sent(host)[1]).toEqual({ project_id: 1, task_id: 1, status: 'in_progress' });
+    });
+
+    it('does not call a choice stale while its own save is still in flight', async () => {
+        const host = two();
+        const save = host.handlers.update_task;
+        const pending = deferred<ToolResult>();
+
+        host.handlers.update_task = async (args) => {
+            const result = await save(args);
+
+            return args.task_id === 1 ? pending.promise : result;
+        };
+        await open(LIST, host);
+        enter(statusLabel, 'in_progress');
+        saveButton().click();
+        control<HTMLButtonElement>('Complete Beta').click();
+        await settle();
+
+        expect(text()).not.toContain('An unsaved choice was cleared');
+        expect(saveButton().textContent).toBe('Saving…');
+
+        pending.resolve({ structuredContent: { task: task({ status: 'in_progress' }) } });
+        await settle();
+        expect(saveButton().hidden).toBe(true);
+    });
+
+    it('shows a choice again, still unsaved, after its task was filtered out of sight', async () => {
+        const { host } = await open(LIST);
+
+        enter(statusLabel, 'completed');
+        enter('Filter by status', 'in_progress');
+        enter('Filter by status', '');
+
+        expect(list().value).toBe('completed');
+        expect(saveButton().hidden).toBe(false);
+        expect(host.writes()).toEqual([]);
     });
 
     it('keeps filtering immediate', async () => {
         await open(LIST);
 
-        press('Filter by status', 'ArrowDown', 'completed');
+        enter('Filter by status', 'completed');
 
         expect(text()).toContain('No tasks match these filters');
-    });
-
-    it('keeps focus on a control while its task is saving, and ignores further changes', async () => {
-        const host = fakeHost();
-        const pending = deferred<ToolResult>();
-
-        host.handlers.update_task = () => pending.promise;
-        await open(LIST, host);
-
-        control(`Complete ${title}`).focus();
-        control(`Complete ${title}`).click();
-        enter(`Priority of ${title}`, 'high');
-
-        expect(document.activeElement).toBe(control(`Complete ${title}`));
-        expect(isDisabled(control(`Complete ${title}`))).toBe(true);
-        expect(control<HTMLSelectElement>(`Priority of ${title}`).value).toBe('medium');
-        expect(saves(host)).toEqual(['completed']);
-    });
-});
-
-describe('moving on while a keyboard choice is unsaved', () => {
-    const two = () => fakeHost({ tasks: [task(), task({ id: 2, title: 'Beta' })] });
-
-    async function drafted(route: Route = LIST) {
-        const mounted = await open(route, two());
-
-        control(statusLabel).focus();
-        press(statusLabel, 'ArrowDown', 'in_progress');
-
-        return mounted;
-    }
-
-    /** A mouse click as a browser delivers it: focus moves on press, the click follows release. */
-    async function mouseClick(find: () => HTMLElement) {
-        const pressed = find();
-
-        pressed.dispatchEvent(new Event('pointerdown', { bubbles: true }));
-        pressed.focus();
-        await settle();
-        // Nothing may be redrawn between press and release.
-        expect(find()).toBe(pressed);
-        pressed.dispatchEvent(new Event('pointerup', { bubbles: true }));
-        pressed.click();
-        await settle();
-    }
-
-    it.each([
-        [`Complete ${title}`, [[1, 'completed']]],
-        ['Complete Beta', [[2, 'completed']]],
-    ])('sends only what "%s" asks for', async (label, expected) => {
-        const { host } = await drafted();
-
-        await mouseClick(() => control(label));
-
-        expect(host.calls('update_task').map(([, args]) => [args.task_id, args.status])).toEqual(expected);
-    });
-
-    it('sends only the field picked in the other select', async () => {
-        const { host } = await drafted();
-
-        control(`Priority of ${title}`).dispatchEvent(new Event('pointerdown', { bubbles: true }));
-        control(`Priority of ${title}`).focus();
-        await settle();
-        enter(`Priority of ${title}`, 'high');
-        await settle();
-
-        expect(host.calls('update_task').map(([, args]) => args)).toEqual([{ project_id: 1, task_id: 1, priority: 'high' }]);
-    });
-
-    it.each([
-        [LIST, '← Launch plan'],
-        [DETAIL, 'Edit task'],
-    ])('leaves %o at once without saving', async (route, label) => {
-        const { host } = await drafted(route);
-
-        await mouseClick(() => buttons(label)[0]);
-
-        expect(saves(host)).toEqual([]);
-        expect(document.querySelector('h1')!.textContent).not.toBe('Tasks');
-        expect(host.tasks[0].status).toBe('todo');
-    });
-
-    it('sends nothing when the opened list is used to pick the saved value again', async () => {
-        const { host } = await drafted();
-
-        control(statusLabel).dispatchEvent(new Event('pointerdown', { bubbles: true }));
-        enter(statusLabel, 'todo');
-        await settle();
-
-        expect(saves(host)).toEqual([]);
-        expect(document.getElementById('tn-hint-status-1')!.hidden).toBe(true);
-    });
-
-    it('shows a view the host asks for at once', async () => {
-        const { controller, host } = await drafted();
-
-        controller.handleToolResult({ structuredContent: { view: 'projects' } });
-        await settle();
-
-        expect(document.querySelector('h1')!.textContent).toBe('Projects');
-        expect(saves(host)).toEqual([]);
     });
 });
 

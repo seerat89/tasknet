@@ -27,9 +27,9 @@ document.addEventListener('click', async (event) => {
     if (copyButton) {
         try {
             await navigator.clipboard.writeText(copyButton.dataset.copyText);
-            showSaveStatus('Credentials copied');
+            showSaveStatus(copyButton.dataset.copySuccess ?? 'Credentials copied');
         } catch {
-            showSaveStatus('Copy failed. Select the credentials and copy them manually, or download them.', true);
+            showSaveStatus(copyButton.dataset.copyFailure ?? 'Copy failed. Select the credentials and copy them manually, or download them.', true);
         }
 
         return;

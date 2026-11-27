@@ -21,4 +21,4 @@ Mcp::web('/mcp', TaskNetServer::class)->middleware([
     CheckToken::using('mcp:use'),
     EnsureDemoWorkspaceIsActiveForMcp::class,
     'throttle:mcp',
-]);
+])->name('mcp.server');

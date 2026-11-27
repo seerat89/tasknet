@@ -65,6 +65,7 @@ export function taskDetailView(context: ViewContext, projectId: number, taskId: 
         }
 
         saving = false;
+        drafts.delete(taskId);
 
         if (context.isCurrent()) {
             view.rerender();
@@ -117,7 +118,7 @@ export function taskDetailView(context: ViewContext, projectId: number, taskId: 
                     saving,
                     drafts,
                     (input) => void change(data, input),
-                    () => context.announce('Change not saved.'),
+                    (message) => context.announce(message),
                 ),
             );
         },

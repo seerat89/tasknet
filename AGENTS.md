@@ -39,3 +39,4 @@ TaskNet is a Laravel project and task manager that demonstrates how users connec
 - Do not add or upgrade dependencies, or run `npm audit fix`, `composer update` or `boost:update`, without approval.
 - Do not commit or push unless explicitly asked. Use Conventional Commit-style one-line messages.
 - Do not create documentation files unless requested. Keep changes focused; avoid unrelated refactors.
+- Automated browser and HTTP checks must not leave this machine. Launch browsers behind a proxy that refuses every non-local host (this also stops redirects), and first prove the block for HTTP and HTTPS in each engine used, against a target on this machine. Never follow an OAuth redirect to a real external service, and use throwaway data and keys.

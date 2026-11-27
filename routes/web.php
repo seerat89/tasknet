@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthorizedMcpClientController;
+use App\Http\Controllers\ConnectionGuideController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemoCredentialsController;
 use App\Http\Controllers\DemoWorkspaceController;
@@ -20,6 +21,7 @@ Route::get('/cron/cleanup', ScheduledCleanupController::class)
     ->name('cron.cleanup');
 
 Route::view('/about', 'about')->name('about');
+Route::get('/connect', ConnectionGuideController::class)->name('connect');
 Route::view('/privacy', 'privacy')->name('privacy');
 Route::view('/terms', 'terms')->name('terms');
 

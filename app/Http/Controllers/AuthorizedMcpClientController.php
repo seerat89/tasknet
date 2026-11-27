@@ -12,14 +12,14 @@ class AuthorizedMcpClientController extends Controller
     /**
      * Revoke the signed-in workspace's access for one authorized MCP client.
      *
-     * The client in the URL only selects among the clients this workspace has authorized.
+     * The client in the URL only selects among the clients this workspace holds tokens for.
      * Anything else is a 404, and nothing outside the signed-in user's own rows is ever touched.
      */
     public function destroy(Request $request, string $client, ListAuthorizedMcpClients $authorized, RevokeMcpClientAccess $revoke): RedirectResponse
     {
         $user = $request->user();
 
-        $revokedClient = $authorized->get($user)->firstWhere('id', $client);
+        $revokedClient = $authorized->revocable($user, $client);
 
         abort_if($revokedClient === null, 404);
 

@@ -136,7 +136,8 @@
 
             <footer class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-stone-200/70 py-6 text-sm text-stone-500">
                 <p>TaskNet · Taskboard for AI Agents</p>
-                <nav aria-label="Footer" class="flex items-center gap-6">
+                <nav aria-label="Footer" class="flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <a href="{{ route('connect') }}" @if (request()->routeIs('connect')) aria-current="page" @endif class="rounded-sm underline decoration-stone-300 underline-offset-4 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">How to connect an AI client?</a>
                     <a href="{{ route('privacy') }}" class="rounded-sm underline decoration-stone-300 underline-offset-4 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">Privacy</a>
                     <a href="{{ route('terms') }}" class="rounded-sm underline decoration-stone-300 underline-offset-4 hover:text-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">Terms</a>
                 </nav>

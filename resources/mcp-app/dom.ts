@@ -29,6 +29,25 @@ export function h<K extends keyof HTMLElementTagNameMap>(tag: K, props: Props = 
     return element;
 }
 
+let replacing = false;
+
+/** True while swap() is removing old content. */
+export const isReplacing = (): boolean => replacing;
+
+/**
+ * Replace a container's content. Chromium fires `change` on a select whose list is open when it is
+ * removed, so selects ignore changes made while this runs.
+ */
+export function swap(container: Element, ...nodes: Node[]): void {
+    replacing = true;
+
+    try {
+        container.replaceChildren(...nodes);
+    } finally {
+        replacing = false;
+    }
+}
+
 export interface Painter {
     (...nodes: Array<Node | false | null | undefined>): void;
     /** Focus the control with this data-key after the next redraw, when the focused one is about to go. */
@@ -58,7 +77,7 @@ export function createPainter(container: HTMLElement): Painter {
             requested = undefined;
         }
 
-        container.replaceChildren(...nodes.filter((node): node is Node => node instanceof Node));
+        swap(container, ...nodes.filter((node): node is Node => node instanceof Node));
 
         if (focusKey === undefined) {
             return;

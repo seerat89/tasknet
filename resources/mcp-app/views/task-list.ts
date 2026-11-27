@@ -5,7 +5,7 @@ import { STATUS_LABELS } from '../rules';
 import type { Priority, Project, Status, Task } from '../types';
 import { alert, button, dueDate, emptyState, header, notice, priorityLevelChoices, progress, select, statusChoices } from '../ui';
 import { loadingView } from './loader';
-import { type Drafts, saveTask, taskControls, UNCONFIRMED_SHOWN } from './task-controls';
+import { type Drafts, dropStaleDrafts, saveTask, STALE_DRAFT, taskControls, UNCONFIRMED_SHOWN } from './task-controls';
 import { COMPACT_LIMIT, type View, type ViewContext } from './view';
 
 interface Data {
@@ -30,6 +30,7 @@ export function taskListView(context: ViewContext, projectId: number): View {
     const filters = context.filters(projectId);
     let saved = false;
     let outOfDate = false;
+    let staleDraft = false;
     let reloads = 0;
     let newest: Promise<boolean>;
 
@@ -69,6 +70,7 @@ export function taskListView(context: ViewContext, projectId: number): View {
         saving.add(task.id);
         problems.delete(task.id);
         saved = false;
+        staleDraft = false;
         context.dismissNotice();
         context.announce('Saving…');
         view.rerender();
@@ -92,14 +94,20 @@ export function taskListView(context: ViewContext, projectId: number): View {
         }
 
         saving.delete(task.id);
+        drafts.delete(task.id);
+
+        const dropped = dropStaleDrafts(drafts, data.tasks, saving);
+
+        staleDraft ||= dropped;
 
         if (context.isCurrent()) {
             view.rerender();
             context.publish(summary(data));
 
             const problem = problems.get(task.id);
+            const result = problem?.text ?? 'Task saved.';
 
-            context.announce(problem?.text ?? 'Task saved.', problem?.failed);
+            context.announce(dropped ? `${result} ${STALE_DRAFT}` : result, problem?.failed);
         }
     }
 
@@ -139,6 +147,7 @@ export function taskListView(context: ViewContext, projectId: number): View {
                 ...[...problems.values()].map(({ text, failed }) => (failed ? alert(text) : notice(text))),
                 outOfDate && alert('The list could not be refreshed and may be out of date.'),
                 saved && notice('Task saved.'),
+                staleDraft && notice(STALE_DRAFT),
                 tasks.length > 0 && progress(stats.completed, stats.total),
                 tasks.length > 0 &&
                     h(
@@ -194,7 +203,7 @@ export function taskListView(context: ViewContext, projectId: number): View {
                                     saving.has(task.id),
                                     drafts,
                                     (input) => void change(data, task, input),
-                                    () => context.announce('Change not saved.'),
+                                    (message) => context.announce(message),
                                 ),
                             ),
                         ),

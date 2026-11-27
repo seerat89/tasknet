@@ -1,4 +1,4 @@
-import { h } from './dom';
+import { h, isReplacing } from './dom';
 import { formatDate, isOverdue } from './format';
 import { PRIORITIES, PRIORITY_LABELS, STATUS_LABELS, STATUSES } from './rules';
 import type { Priority, Task } from './types';
@@ -124,7 +124,11 @@ export function select<T extends string>(
     );
 
     element.value = value;
-    element.addEventListener('change', () => onChange(element.value as T));
+    element.addEventListener('change', () => {
+        if (!isReplacing()) {
+            onChange(element.value as T);
+        }
+    });
 
     return element;
 }

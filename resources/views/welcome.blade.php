@@ -16,6 +16,7 @@
                 @auth
                     <x-link-button :href="route('dashboard')" class="min-w-40">Open dashboard</x-link-button>
                 @endauth
+                <p><a href="{{ route('connect') }}" class="rounded-sm text-sm font-medium text-teal-700 underline decoration-teal-700/40 underline-offset-4 hover:decoration-teal-700 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600">How to connect ChatGPT, Claude and other clients</a></p>
                 <p class="max-w-sm text-xs leading-5 text-stone-500">Temporary workspace · automatically deleted after {{ config('tasknet.demo.lifetime_days') }} days</p>
             </div>
         </div>

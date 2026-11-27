@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Http\Controllers\ApproveMcpAuthorizationController;
+use App\Support\OAuth\RevocationAwareAuthCodeRepository;
+use App\Support\OAuth\RevocationAwareRefreshTokenRepository;
 use App\Support\PrivacyDatabaseSessionHandler;
 use Carbon\CarbonInterval;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -9,6 +12,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\Bridge\AuthCodeRepository;
+use Laravel\Passport\Bridge\RefreshTokenRepository;
+use Laravel\Passport\Http\Controllers\ApproveAuthorizationController;
 use Laravel\Passport\Passport;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +26,13 @@ class AppServiceProvider extends ServiceProvider
     {
         // Must be set before Passport boots and registers its routes and grants.
         Passport::$deviceCodeGrantEnabled = false;
+
+        // Passport fires no event when a user approves a client, so its controller is extended.
+        $this->app->bind(ApproveAuthorizationController::class, ApproveMcpAuthorizationController::class);
+
+        // Passport's token grants would otherwise reissue access revoked while they were running.
+        $this->app->bind(AuthCodeRepository::class, RevocationAwareAuthCodeRepository::class);
+        $this->app->bind(RefreshTokenRepository::class, RevocationAwareRefreshTokenRepository::class);
     }
 
     /**

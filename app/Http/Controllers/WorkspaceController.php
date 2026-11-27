@@ -19,7 +19,7 @@ class WorkspaceController extends Controller
     {
         return view('workspace.settings', [
             'user' => $request->user(),
-            'clients' => $authorizedClients->get($request->user()),
+            'clients' => $authorizedClients->details($request->user()),
         ]);
     }
 

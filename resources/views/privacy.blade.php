@@ -10,7 +10,7 @@
             <section aria-labelledby="stored-heading" class="flex flex-col gap-3 text-lg leading-8 text-stone-700">
                 <h2 id="stored-heading" class="text-2xl font-semibold tracking-tight text-stone-900">Information TaskNet stores</h2>
                 <p>TaskNet stores the Demo ID generated for your workspace, a hash of your password, and the projects and tasks you create.</p>
-                <p>If you connect an AI client, TaskNet also stores the OAuth information needed to authorize that connection.</p>
+                <p>If you connect an AI client, TaskNet also stores the OAuth information needed to authorize that connection, when you approved it and when it last used your workspace, so you can review it in Workspace settings.</p>
                 <p>TaskNet does not ask for your name or email address. It does not retain raw IP addresses or User-Agent strings in its application database. Technical request information may be processed briefly for security and rate limiting.</p>
                 <p>Hosting and infrastructure providers, such as Vercel, may separately process technical request information as part of running the service under their own policies.</p>
             </section>
@@ -67,7 +67,7 @@
                 </section>
             @endif
 
-            <p class="text-sm text-stone-500">Last updated: 13 October 2026</p>
+            <p class="text-sm text-stone-500">Last updated: 27 November 2026</p>
         </div>
     </div>
 </x-app-layout>

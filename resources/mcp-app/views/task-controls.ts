@@ -8,136 +8,187 @@ import { messageOf, recordingAttempt, type ViewContext } from './view';
 
 type Choice = 'status' | 'priority';
 
-/** Choices made with the keyboard but not yet saved, by task ID. Views keep them across redraws. */
-export type Drafts = Map<number, Pick<TaskInput, Choice>>;
-
-// Keys that move through a closed select, changing its value on the way.
-const BROWSING_KEY = /^(Arrow(Up|Down|Left|Right)|Home|End|Page(Up|Down)|\S)$/;
-
-/**
- * A select that saves a pointer choice at once. A value reached by moving through the options with the
- * keyboard is saved only on Enter: Escape, or leaving the select, puts the saved value back.
- *
- * Leaving never saves, so that no save can start in the middle of whatever the user does next.
- */
-function savingSelect<K extends Choice>(config: {
-    label: string;
-    task: Task;
-    field: K;
-    choices: Choices<Task[K]>;
-    busy: boolean;
-    drafts: Drafts;
-    send: (input: TaskInput) => void;
-    /** Called when an unsaved choice is dropped because the user moved on. */
-    abandoned: () => void;
-}): HTMLElement {
-    const { task, field, drafts, busy } = config;
-    const saved = task[field];
-    const key = `${field}-${task.id}`;
-    // Positioned over the content (see .tn-hint), so showing or hiding it never moves what is being clicked.
-    const hint = h('span', { class: 'tn-hint', id: `tn-hint-${key}` }, 'Press Enter to save');
-    const drafted = (): string | undefined => drafts.get(task.id)?.[field];
-    const discard = (): void => {
-        const draft = drafts.get(task.id);
-
-        delete draft?.[field];
-
-        if (draft && Object.keys(draft).length === 0) {
-            drafts.delete(task.id);
-        }
-
-        hint.hidden = true;
-    };
-    let browsing = false;
-
-    const element = select<Task[K]>(
-        config.label,
-        (drafted() as Task[K] | undefined) ?? saved,
-        config.choices,
-        (value) => {
-            if (busy) {
-                element.value = saved;
-            } else if (value === saved) {
-                // Back where it started: nothing is left to save.
-                discard();
-            } else if (browsing) {
-                drafts.set(task.id, { ...drafts.get(task.id), [field]: value });
-                hint.hidden = false;
-            } else {
-                config.send({ [field]: value });
-            }
-        },
-        { key },
-    );
-
-    hint.hidden = drafted() === undefined;
-    element.setAttribute('aria-describedby', hint.id);
-
-    if (busy) {
-        element.setAttribute('aria-disabled', 'true');
-    }
-
-    element.addEventListener('pointerdown', () => (browsing = false));
-    element.addEventListener('keydown', (event) => {
-        const value = drafted();
-
-        if (event.key === 'Enter' && value !== undefined) {
-            event.preventDefault();
-            config.send({ [field]: value });
-        } else if (event.key === 'Escape' && value !== undefined) {
-            event.preventDefault();
-            discard();
-            element.value = saved;
-        }
-
-        // Alt+arrow opens the list instead; choosing from an open list is a deliberate choice.
-        browsing = !event.altKey && !event.ctrlKey && !event.metaKey && BROWSING_KEY.test(event.key);
-    });
-    element.addEventListener('blur', () => {
-        // A redraw puts focus on the replacement select, which keeps the draft: that is not leaving.
-        setTimeout(() => {
-            const focused = (document.activeElement as HTMLElement | null)?.dataset.key;
-
-            if (drafted() !== undefined && focused !== key) {
-                discard();
-                element.value = saved;
-                config.abandoned();
-            }
-        }, 0);
-    });
-
-    return h('span', { class: 'tn-saving-select' }, element, hint);
+interface Draft {
+    /** The saved values the choice was made against. */
+    from: Pick<Task, Choice>;
+    /** Only the fields that differ from them. */
+    input: Pick<TaskInput, Choice>;
 }
 
-/** Status, priority and complete/reopen controls, shared by the task list and task detail. */
+/** Status and priority choices not yet saved, by task ID. Views keep them across redraws. */
+export type Drafts = Map<number, Draft>;
+
+export const UNSAVED_HINT = 'Not saved yet. Press Enter or choose Save.';
+
+export const STALE_DRAFT = 'An unsaved choice was cleared because its task changed.';
+
+/**
+ * Forget choices made against values that have since changed, so saving never silently overwrites
+ * something newer. Tasks being saved are left alone. Returns whether anything was forgotten.
+ */
+export function dropStaleDrafts(drafts: Drafts, tasks: Task[], saving: ReadonlySet<number>): boolean {
+    let dropped = false;
+
+    for (const [id, draft] of drafts) {
+        const task = tasks.find((candidate) => candidate.id === id);
+        const changed = !task || (Object.keys(draft.input) as Choice[]).some((field) => task[field] !== draft.from[field]);
+
+        if (changed && !saving.has(id)) {
+            drafts.delete(id);
+            dropped = true;
+        }
+    }
+
+    return dropped;
+}
+
+/**
+ * Status, priority and complete/reopen controls, shared by the task list and task detail.
+ *
+ * Choosing from a list never saves, however it was done: it shows Save and Discard, and Enter on the
+ * changed list saves as well. Complete and Reopen are explicit actions and save at once.
+ */
 export function taskControls(
     task: Task,
     busy: boolean,
     drafts: Drafts,
     change: (input: TaskInput) => void,
-    abandoned: () => void,
+    announce: (message: string) => void,
 ): HTMLElement {
     const done = task.status === 'completed';
-    // A save sends only what the user just confirmed; any other unsaved choice on this task is dropped.
-    const send = (input: TaskInput): void => {
-        if (!busy) {
-            drafts.delete(task.id);
-            change(input);
+    const hint = h('span', { class: 'sr-only', id: `tn-unsaved-${task.id}` }, UNSAVED_HINT);
+    const drafted = (field: Choice): boolean => drafts.get(task.id)?.input[field] !== undefined;
+
+    function choiceList<K extends Choice>(field: K, label: string, choices: Choices<Task[K]>): HTMLSelectElement {
+        const shown = (drafts.get(task.id)?.input[field] as Task[K] | undefined) ?? task[field];
+        const element: HTMLSelectElement = select<Task[K]>(
+            label,
+            shown,
+            choices,
+            (value) => {
+                if (busy) {
+                    element.value = shown;
+
+                    return;
+                }
+
+                const before = drafts.get(task.id);
+                const input: Draft['input'] = { ...before?.input, [field]: value };
+
+                if (value === task[field]) {
+                    delete input[field];
+                }
+
+                if (Object.keys(input).length === 0) {
+                    drafts.delete(task.id);
+                } else {
+                    drafts.set(task.id, { from: { status: task.status, priority: task.priority }, input });
+
+                    if (!before) {
+                        announce(UNSAVED_HINT);
+                    }
+                }
+
+                // Only these attributes change: redrawing from inside a change event is not safe.
+                reflect();
+            },
+            { key: `${field}-${task.id}` },
+        );
+
+        if (busy) {
+            element.setAttribute('aria-disabled', 'true');
         }
+
+        element.addEventListener('keydown', (event) => {
+            if (drafted(field) && (event.key === 'Enter' || event.key === 'Escape')) {
+                // Enter would otherwise open the list.
+                event.preventDefault();
+                (event.key === 'Enter' ? confirm : discard)();
+            }
+        });
+
+        return element;
+    }
+
+    const lists = {
+        status: choiceList('status', `Status of ${task.title}`, statusChoices),
+        priority: choiceList('priority', `Priority of ${task.title}`, priorityLevelChoices),
     };
-    const shared = { task, busy, drafts, send, abandoned };
+    const saveButton = button(busy ? 'Saving…' : 'Save', () => confirm(), {
+        primary: true,
+        disabled: busy,
+        key: `save-${task.id}`,
+        ariaLabel: `${busy ? 'Saving' : 'Save'} changes to ${task.title}`,
+    });
+    const discardButton = button('Discard', () => discard(), {
+        disabled: busy,
+        key: `discard-${task.id}`,
+        ariaLabel: `Discard changes to ${task.title}`,
+    });
+
+    /** Both buttons go away afterwards, so focus on one of them moves to the list that was changed. */
+    function keepFocus(): void {
+        if (document.activeElement === saveButton || document.activeElement === discardButton) {
+            (drafted('status') ? lists.status : lists.priority).focus();
+        }
+    }
+
+    /** Save the chosen values, and nothing else. */
+    function confirm(): void {
+        const draft = drafts.get(task.id);
+
+        if (!busy && draft) {
+            keepFocus();
+            change(draft.input);
+        }
+    }
+
+    function discard(): void {
+        if (!busy && drafts.has(task.id)) {
+            keepFocus();
+            drafts.delete(task.id);
+            lists.status.value = task.status;
+            lists.priority.value = task.priority;
+            reflect();
+            announce('Change discarded.');
+        }
+    }
+
+    /** Match the buttons and descriptions to whether there is something to save. */
+    function reflect(): void {
+        saveButton.hidden = discardButton.hidden = !drafts.has(task.id);
+
+        for (const field of ['status', 'priority'] as const) {
+            if (drafted(field)) {
+                lists[field].setAttribute('aria-describedby', hint.id);
+            } else {
+                lists[field].removeAttribute('aria-describedby');
+            }
+        }
+    }
+
+    reflect();
 
     return h(
         'div',
         { class: 'tn-controls', 'aria-busy': busy ? 'true' : undefined },
-        button(done ? 'Reopen' : 'Complete', () => send({ status: done ? 'todo' : 'completed' }), {
-            disabled: busy,
-            key: `toggle-${task.id}`,
-            ariaLabel: `${done ? 'Reopen' : 'Complete'} ${task.title}`,
-        }),
-        savingSelect({ ...shared, label: `Status of ${task.title}`, field: 'status', choices: statusChoices }),
-        savingSelect({ ...shared, label: `Priority of ${task.title}`, field: 'priority', choices: priorityLevelChoices }),
-        busy && h('span', { class: 'tn-muted' }, 'Saving…'),
+        button(
+            done ? 'Reopen' : 'Complete',
+            () => {
+                if (!busy) {
+                    // An explicit action of its own: any unsaved choice on this task is dropped, not sent.
+                    drafts.delete(task.id);
+                    change({ status: done ? 'todo' : 'completed' });
+                }
+            },
+            { disabled: busy, key: `toggle-${task.id}`, ariaLabel: `${done ? 'Reopen' : 'Complete'} ${task.title}` },
+        ),
+        lists.status,
+        lists.priority,
+        saveButton,
+        discardButton,
+        hint,
+        busy && !drafts.has(task.id) && h('span', { class: 'tn-muted' }, 'Saving…'),
     );
 }
 

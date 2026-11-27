@@ -1,6 +1,6 @@
 import type { McpUiHostContext } from '@modelcontextprotocol/ext-apps';
 import { createApi } from './api';
-import { h } from './dom';
+import { h, swap } from './dom';
 import { formatDateTime, today } from './format';
 import { type HostBridge, type Route, routeSchema, type ToolResult } from './types';
 import { alert, button, loading, notice } from './ui';
@@ -143,7 +143,7 @@ export function createController(root: HTMLElement, bridge: HostBridge): Control
             dismissNotice: () => arrival?.remove(),
         });
 
-        content.replaceChildren(...(arrival ? [arrival] : []), view.element);
+        swap(content, ...(arrival ? [arrival] : []), view.element);
     };
 
     const fail = (message: string): void => {
@@ -151,7 +151,8 @@ export function createController(root: HTMLElement, bridge: HostBridge): Control
         view = undefined;
         showing = 'TaskNet view: this view could not be opened.';
         share();
-        content.replaceChildren(
+        swap(
+            content,
             alert(
                 message,
                 button('Browse projects', () => {
@@ -193,7 +194,7 @@ export function createController(root: HTMLElement, bridge: HostBridge): Control
         handleConnectionFailure() {
             const message = 'This view could not connect to your AI client. Ask for TaskNet again in the chat.';
 
-            content.replaceChildren(alert(message));
+            swap(content, alert(message));
             announce(message, true);
         },
 

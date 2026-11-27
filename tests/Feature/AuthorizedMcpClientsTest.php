@@ -1,8 +1,10 @@
 <?php
 
 use App\Actions\ListAuthorizedMcpClients;
+use App\Models\McpClientAuthorization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
@@ -124,7 +126,8 @@ test('an authorized client appears with a revoke button and no secrets', functio
         ->assertDontSeeText($tokens['client_id'])
         ->assertDontSee('http://localhost:7777/callback', false)
         ->assertDontSee($user->email)
-        ->assertDontSeeText(['Authorized Oct', 'online', 'currently connected']);
+        // Tokens cannot show whether a client is running, so the page never claims it.
+        ->assertDontSeeText(['online', 'currently connected']);
 });
 
 test('client names are escaped and a missing name falls back', function () {
@@ -139,6 +142,17 @@ test('client names are escaped and a missing name falls back', function () {
         ->not->toContain('<b>Evil</b>')
         ->toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     $response->assertSeeText('MCP client');
+});
+
+test('a quote in a client name cannot leave the button label, and is escaped once', function () {
+    $user = User::factory()->demo()->create();
+    tokenRow($user, namedClient('Bob\'s "agent" onmouseover="x'));
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertOk()
+        ->assertSee('aria-label="Revoke access for Bob&#039;s &quot;agent&quot; onmouseover=&quot;x"', false)
+        ->assertDontSee('&amp;quot;', false)
+        ->assertDontSee('onmouseover="x', false);
 });
 
 test('several token chains for one client give one row', function () {
@@ -245,6 +259,7 @@ test('a client that only another workspace authorized cannot be revoked', functi
         ->and(authorizedNames($b))->toBe(['Test Agent']);
 
     $this->actingAs($a)->delete(route('settings.clients.destroy', (string) Str::uuid()))->assertNotFound();
+    $this->actingAs($a)->delete(route('settings.clients.destroy', 'not-a-client'))->assertNotFound();
 });
 
 test('every token chain for the user and client is revoked', function () {
@@ -320,12 +335,154 @@ test('revocation cannot be triggered with GET or without a signed-in user', func
     $this->actingAs(User::factory()->demo()->create())->get('/settings/mcp-clients/'.$client->getKey())->assertStatus(405);
 });
 
-test('the revoke control asks for a confirmation and needs no password', function () {
+test('the revoke control explains the consequences and needs no password', function () {
     $user = User::factory()->demo()->create();
     tokenRow($user, namedClient('Confirm Me'));
 
     $this->actingAs($user)->get(route('settings'))
-        ->assertSeeText(['Revoke access for Confirm Me?', 'This client will no longer be able to access this workspace. You can authorize it again later.'])
+        ->assertSeeText([
+            'Revoke access for Confirm Me?',
+            'Its tokens stop working immediately and it cannot renew them',
+            'Your projects and tasks are kept.',
+            'you will need to approve it again',
+        ])
+        ->assertSee('data-dialog-open="revoke-', false)
+        ->assertSee('aria-label="Revoke access for Confirm Me"', false)
+        ->assertSee('data-loading-text="Revoking…"', false)
         ->assertSee('name="_method" value="DELETE"', false)
         ->assertDontSee('name="password"', false);
+});
+
+// --- What each client shows -----------------------------------------------------
+
+test('a client approved and used before dates were kept shows them as not recorded', function () {
+    $user = User::factory()->demo()->create();
+    $client = namedClient('Old Client');
+    // Tokens carry timestamps, but they say when each was issued, not when the user agreed.
+    refreshRow(tokenRow($user, $client, ['created_at' => now()->subDays(3)]));
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertOk()
+        ->assertSeeInOrder(['Old Client', 'Approved', 'Not recorded', 'Last activity', 'None recorded', 'Status', 'Access active'])
+        ->assertDontSee('<time datetime="'.now()->subDays(3)->format('Y-m-d'), false)
+        ->assertSeeText('“Not recorded” means TaskNet has no date for an approval');
+
+    expect(McpClientAuthorization::query()->count())->toBe(0);
+});
+
+test('the approval and activity dates are shown in UTC', function () {
+    $user = User::factory()->demo()->create(['expires_at' => now()->addDays(30)]);
+    $client = namedClient('Dated Client');
+    tokenRow($user, $client);
+    McpClientAuthorization::query()->create([
+        'user_id' => $user->id,
+        'client_id' => $client->getKey(),
+        'authorized_at' => '2026-03-04 05:06:00',
+        'last_used_at' => '2026-03-07 08:09:00',
+    ]);
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertSeeInOrder(['Approved', 'March 4, 2026 at 05:06 UTC', 'Last activity', 'March 7, 2026 at 08:09 UTC'], false)
+        ->assertSee('<time datetime="2026-03-04T05:06:00+00:00">', false);
+});
+
+test('one workspace never sees another workspace’s dates for a shared client', function () {
+    $user = User::factory()->demo()->create();
+    $other = User::factory()->demo()->create();
+    $client = namedClient('Shared Client');
+    tokenRow($user, $client);
+    tokenRow($other, $client);
+    McpClientAuthorization::query()->create([
+        'user_id' => $other->id,
+        'client_id' => $client->getKey(),
+        'authorized_at' => '2026-03-04 05:06:00',
+        'last_used_at' => '2026-03-07 08:09:00',
+    ]);
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertSeeText(['Shared Client', 'Not recorded', 'None recorded'])
+        ->assertDontSeeText(['March 4, 2026', 'March 7, 2026']);
+});
+
+test('granted permissions are described in plain words', function () {
+    $user = User::factory()->demo()->create();
+    tokenRow($user, namedClient('Scoped Client'));
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertSeeInOrder(['Scoped Client', 'Permissions', 'View your projects and tasks', 'Create and update projects and tasks'])
+        ->assertDontSeeText('mcp:use');
+});
+
+test('a client whose tokens carry no MCP permission says so', function () {
+    $user = User::factory()->demo()->create();
+    tokenRow($user, namedClient('Unscoped Client'), ['scopes' => []]);
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertSeeText('No permission to use TaskNet’s MCP tools')
+        ->assertDontSeeText('Create and update projects and tasks');
+});
+
+test('the status says only what the tokens show', function () {
+    $user = User::factory()->demo()->create(['expires_at' => now()->addDays(30)]);
+    $client = namedClient('Idle Client');
+    refreshRow(tokenRow($user, $client, ['expires_at' => now()->subHour()]), ['expires_at' => now()->addDays(10)]);
+
+    $idle = app(ListAuthorizedMcpClients::class)->details($user)->sole();
+
+    expect($idle->hasAccessToken)->toBeFalse()
+        ->and($idle->accessUntil->toDateString())->toBe(now()->addDays(10)->toDateString());
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertSeeInOrder(['Status', 'Renews on next use', 'unless renewed'])
+        ->assertDontSeeText('Access active');
+});
+
+test('access that outlasts the workspace is described as ending with it', function () {
+    $user = User::factory()->demo()->create(['expires_at' => now()->addDays(2)]);
+    refreshRow(tokenRow($user, namedClient('Long Client')));
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertSeeText(['Access active', 'Ends when this workspace expires'])
+        ->assertDontSeeText('unless renewed');
+});
+
+test('a client is identified by where it returns after sign-in, never by its name', function (string $name, array $uris, string $icon, string $description) {
+    $user = User::factory()->demo()->create();
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient($name, $uris, false);
+    tokenRow($user, $client);
+
+    $this->actingAs($user)->get(route('settings'))
+        ->assertSee('data-client-icon="'.$icon.'"', false)
+        ->assertSeeText($description);
+})->with([
+    'ChatGPT callback' => ['My agent', ['https://chatgpt.com/connector/oauth/abc123'], 'ChatGPT', 'Returns to chatgpt.com after sign-in'],
+    'Claude callback' => ['My agent', ['https://claude.ai/api/mcp/auth_callback'], 'Claude', 'Returns to claude.ai after sign-in'],
+    'a local client calling itself ChatGPT' => ['ChatGPT', ['http://localhost:7777/callback'], 'generic', 'Service not identified'],
+    'a look-alike host' => ['Claude', ['https://claude.ai.example.com/callback'], 'generic', 'Service not identified'],
+    // Only the documented callback host counts, so the host shown is always the real one.
+    'a related domain' => ['Claude', ['https://claude.com/api/mcp/auth_callback'], 'generic', 'Service not identified'],
+    'a second callback elsewhere' => ['Claude', ['https://claude.ai/api/mcp/auth_callback', 'http://localhost:7777/callback'], 'generic', 'Service not identified'],
+    'plain HTTP' => ['Claude', ['http://claude.ai/api/mcp/auth_callback'], 'generic', 'Service not identified'],
+    'a host that only looks like the end of the address' => ['Claude', ['https://other.example\@claude.ai/callback'], 'generic', 'Service not identified'],
+]);
+
+test('listing clients takes the same number of queries however many there are', function () {
+    $user = User::factory()->demo()->create();
+    $count = function () use ($user): int {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        app(ListAuthorizedMcpClients::class)->details($user);
+        DB::disableQueryLog();
+
+        return count(DB::getQueryLog());
+    };
+
+    refreshRow(tokenRow($user, namedClient('One')));
+    $single = $count();
+
+    foreach (['Two', 'Three', 'Four'] as $name) {
+        refreshRow(tokenRow($user, namedClient($name)));
+    }
+
+    expect($count())->toBe($single);
 });
